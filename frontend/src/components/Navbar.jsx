@@ -105,14 +105,13 @@ const BasketIcon = () => (
 
 function Navbar() {
  const [showModal, setShowModal] = useState(false);
-    const [loginStatus, setLoginStatus] = useState('');
   return (
     <header className="bg-gradient-to-r from-white to-gray-50 shadow-lg font-sans">
       {/* Top bar */}
       <div className="border-b border-gray-200">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between py-4">
-            {/* Logo - Made Bigger */}
+            {/* Logo - Made Bigger */} 
             <div className="flex items-center">
               <img
                 src={logo}
