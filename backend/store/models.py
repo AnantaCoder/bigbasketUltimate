@@ -70,6 +70,13 @@ class Item(models.Model):
     
     
     
-# create a cart model with use seller and user as foreign key and items referenced  from item table 
+# create a cart model with user seller and user as foreign key and items referenced  from item table 
 class Cart(models.Model):
-    pass
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='carts')
+    seller = models.ForeignKey(Seller, on_delete=models.CASCADE, related_name='carts', null=True, blank=True)
+    items = models.ManyToManyField(Item, related_name='carts')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Cart of {self.user.username} with {self.items.count()} items"

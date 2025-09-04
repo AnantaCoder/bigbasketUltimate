@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from accounts.models import User, Seller
-from store.models import Item , Category
-from store.serializers import ItemSerializer , CategorySerializer
+from store.models import Item, Category, Cart
+from store.serializers import ItemSerializer, CategorySerializer, CartSerializer
 from rest_framework.views import APIView
 from rest_framework import status , response , permissions
 from rest_framework.response import Response
@@ -83,6 +83,42 @@ class ItemDetailAPIView(APIView):
 
 
 class CartItemAPIView(APIView):
-    """ get to see all items , post add to cart  , delete delete from cart , 
-    make sure user is not seller  . 
     """
+    GET: List all cart items for the authenticated user (not seller)
+    POST: Add items to cart
+    DELETE: Remove items from cart
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, format=None):
+        user = request.user
+        if hasattr(user, 'seller'):
+            return Response({'detail': 'Sellers cannot access cart.'}, status=status.HTTP_403_FORBIDDEN)
+        cart, _ = Cart.objects.get_or_create(user=user, seller=None)
+        serializer = CartSerializer(cart)
+        return Response(serializer.data)
+
+    def post(self, request, format=None):
+        user = request.user
+        if hasattr(user, 'seller'):
+            return Response({'detail': 'Sellers cannot add to cart.'}, status=status.HTTP_403_FORBIDDEN)
+        cart, _ = Cart.objects.get_or_create(user=user, seller=None)
+        serializer = CartSerializer(cart, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, format=None):
+        user = request.user
+        if hasattr(user, 'seller'):
+            return Response({'detail': 'Sellers cannot delete from cart.'}, status=status.HTTP_403_FORBIDDEN)
+        cart = Cart.objects.filter(user=user, seller=None).first()
+        if not cart:
+            return Response({'detail': 'Cart not found.'}, status=status.HTTP_404_NOT_FOUND)
+        item_ids = request.data.get('item_ids', [])
+        if item_ids:
+            cart.items.remove(*item_ids)
+            cart.save()
+            return Response({'detail': 'Items removed from cart.'}, status=status.HTTP_200_OK)
+        return Response({'detail': 'No item_ids provided.'}, status=status.HTTP_400_BAD_REQUEST)

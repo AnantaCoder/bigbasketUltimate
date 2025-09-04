@@ -56,4 +56,25 @@ class ItemSerializer(serializers.ModelSerializer):
         
 # cart serializers 
 class CartSerializer(serializers.ModelSerializer):
-    pass
+    user = serializers.StringRelatedField(read_only=True)
+    seller = serializers.StringRelatedField(read_only=True)
+    items = ItemSerializer(many=True, read_only=True)
+    item_ids = serializers.PrimaryKeyRelatedField(
+        queryset=Item.objects.all(),
+        many=True,
+        write_only=True,
+        source='items',
+        required=False
+    )
+
+    class Meta:
+        model = Cart
+        fields = [
+            'id', 
+            'user', 
+            'seller', 
+            'items', 'item_ids', 
+            'created_at', 
+            'updated_at'
+        ]
+        read_only_fields = ['id', 'user', 'seller', 'items', 'created_at', 'updated_at']
