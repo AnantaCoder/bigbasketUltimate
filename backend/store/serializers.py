@@ -1,6 +1,6 @@
 from rest_framework import serializers
-from store.models import Item , Category
-from accounts.models import Seller
+from store.models import Item , Category , Cart
+from accounts.models import Seller 
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
@@ -51,3 +51,9 @@ class ItemSerializer(serializers.ModelSerializer):
             "is_in_stock",
         ]
         read_only_fields = ["id", "created_at", "updated_at", "is_in_stock"]
+        
+        
+        
+# cart serializers 
+class CartSerializer(serializers.ModelSerializer):
+    pass

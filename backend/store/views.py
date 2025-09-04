@@ -79,3 +79,10 @@ class ItemDetailAPIView(APIView):
         self.check_object_permissions(request, item)
         item.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+
+class CartItemAPIView(APIView):
+    """ get to see all items , post add to cart  , delete delete from cart , 
+    make sure user is not seller  . 
+    """

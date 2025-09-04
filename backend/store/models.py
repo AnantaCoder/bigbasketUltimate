@@ -68,3 +68,8 @@ class Item(models.Model):
     def is_in_stock(self):
         return self.quantity > 0
     
+    
+    
+# create a cart model with use seller and user as foreign key and items referenced  from item table 
+class Cart(models.Model):
+    pass

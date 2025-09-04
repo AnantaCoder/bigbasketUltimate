@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     # local files 
     "accounts",
     "store",
+    "payments",
 ]
 # asgi config
 ASGI_APPLICATION = "backend.asgi.application"
