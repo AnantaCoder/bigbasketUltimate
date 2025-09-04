@@ -70,7 +70,7 @@ class Item(models.Model):
     
     
     
-# create a cart model with user seller and user as foreign key and items referenced  from item table 
+# create a cart model with user seller and user as foreign key and items referenced  from item table
 class Cart(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='carts')
     seller = models.ForeignKey(Seller, on_delete=models.CASCADE, related_name='carts', null=True, blank=True)
@@ -80,3 +80,6 @@ class Cart(models.Model):
 
     def __str__(self):
         return f"Cart of {self.user.username} with {self.items.count()} items"
+    
+    def get_total_price (self , obj):
+            return sum(item.price for item in self.items.all())

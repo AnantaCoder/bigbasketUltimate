@@ -59,6 +59,9 @@ class CartSerializer(serializers.ModelSerializer):
     user = serializers.StringRelatedField(read_only=True)
     seller = serializers.StringRelatedField(read_only=True)
     items = ItemSerializer(many=True, read_only=True)
+    price = serializers.DecimalField(max_digits=10 , decimal_places=2,read_only = True)
+    total_price = serializers.SerializerMethodField()
+    
     item_ids = serializers.PrimaryKeyRelatedField(
         queryset=Item.objects.all(),
         many=True,
@@ -73,8 +76,20 @@ class CartSerializer(serializers.ModelSerializer):
             'id', 
             'user', 
             'seller', 
-            'items', 'item_ids', 
+            'items', 
+            'item_ids', 
             'created_at', 
-            'updated_at'
+            'updated_at',
+            'price',
+            'total_price',
         ]
-        read_only_fields = ['id', 'user', 'seller', 'items', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'user', 'seller', 'items', 'created_at', 'updated_at', 'total_price']
+
+    def get_total_price (self , obj):
+            return sum(item.price for item in obj.items.all())
+        
+        
+
+
+        
+        
