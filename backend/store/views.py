@@ -1,14 +1,14 @@
 from django.shortcuts import render
 from accounts.models import User, Seller
-from store.models import Item, Category, Cart
-from store.serializers import ItemSerializer, CategorySerializer, CartSerializer
+from store.models import Item, Category, Cart, OrderUser, OrderItem, Order
+from store.serializers import ItemSerializer, CategorySerializer, CartSerializer, OrderUserSerializer, OrderItemSerializer, OrderSerializer
 from rest_framework.views import APIView
-from rest_framework import status , response , permissions
+from rest_framework import status, response, permissions, serializers
 from rest_framework.response import Response
 from django.db.models import Q
 from store.permissions import IsSellerOrReadOnly
 from django.http import Http404
-# Create your views here.
+from rest_framework import generics
 
 class CategoryListAPIView(APIView):
     
@@ -23,7 +23,7 @@ class CategoryListAPIView(APIView):
 # views for single category will be there as well 
 class ItemListCreateAPIView(APIView):
    
-    permission_classes = [IsSellerOrReadOnly]
+    permission_classes = [permissions.AllowAny]
 
     def get(self, request, format=None):
         
@@ -83,6 +83,7 @@ class ItemDetailAPIView(APIView):
 
 
 class CartItemAPIView(APIView):
+
     """
     GET: List all cart items for the authenticated user (not seller)
     POST: Add items to cart
@@ -122,3 +123,47 @@ class CartItemAPIView(APIView):
             cart.save()
             return Response({'detail': 'Items removed from cart.'}, status=status.HTTP_200_OK)
         return Response({'detail': 'No item_ids provided.'}, status=status.HTTP_400_BAD_REQUEST)
+    
+# OrderUser CRUD
+
+class OrderUserListCreateAPIView(generics.ListCreateAPIView):
+    queryset = OrderUser.objects.all()
+    serializer_class = OrderUserSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+class OrderUserRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = OrderUser.objects.all()
+    serializer_class = OrderUserSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+# OrderItem CRUD
+
+class OrderItemListCreateAPIView(generics.ListCreateAPIView):
+    queryset = OrderItem.objects.all()
+    serializer_class = OrderItemSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def perform_create(self, serializer):
+        original_item = serializer.validated_data.get('original_item')
+        if not original_item:
+            raise serializers.ValidationError({'original_item_id': 'This field is required.'})
+        serializer.save(seller=original_item.seller)
+
+class OrderItemRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = OrderItem.objects.all()
+    serializer_class = OrderItemSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+# Order CRUD
+class OrderListCreateAPIView(generics.ListCreateAPIView):
+    queryset = Order.objects.all()
+    serializer_class = OrderSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+class OrderRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Order.objects.all()
+    serializer_class = OrderSerializer
+    permission_classes = [permissions.IsAuthenticated]

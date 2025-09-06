@@ -1,8 +1,7 @@
 from django.db import models
 from django.conf import settings
-from accounts.models import Seller , User
+from accounts.models import Seller, User
 from django.utils import timezone
-
 
 
 class Category(models.Model):
@@ -50,6 +49,7 @@ class Item(models.Model):
     sku = models.CharField(max_length=100, unique=True, blank=True)  
     description = models.TextField(blank=True)
     is_active = models.BooleanField(default=True)
+    refers_token = models.BooleanField(default=False)
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -72,6 +72,7 @@ class Item(models.Model):
     
 # create a cart model with user seller and user as foreign key and items referenced  from item table
 class Cart(models.Model):
+
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='carts')
     seller = models.ForeignKey(Seller, on_delete=models.CASCADE, related_name='carts', null=True, blank=True)
     items = models.ManyToManyField(Item, related_name='carts')
@@ -83,3 +84,47 @@ class Cart(models.Model):
     
     def get_total_price (self , obj):
             return sum(item.price for item in self.items.all())
+
+# OrderUser model
+class OrderUser(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='order_users')
+    phone_no = models.CharField(max_length=20)
+    address = models.TextField()
+    city = models.CharField(max_length=100)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"OrderUser: {self.user.username} ({self.city})"
+
+# OrderItem model
+class OrderItem(models.Model):
+    item_name = models.CharField(max_length=200)
+    price = models.DecimalField(max_digits=10, decimal_places=2)
+    seller = models.ForeignKey(Seller, on_delete=models.CASCADE, related_name='order_items')
+    original_item = models.ForeignKey(Item, on_delete=models.CASCADE, related_name='order_items')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"OrderItem: {self.item_name} - {self.price}"
+
+# Order model
+class Order(models.Model):
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('processing', 'Processing'),
+        ('shipped', 'Shipped'),
+        ('delivered', 'Delivered'),
+        ('cancelled', 'Cancelled'),
+    ]
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    buyer_email = models.EmailField()
+    total_amount = models.DecimalField(max_digits=10, decimal_places=2)
+    order_user = models.ForeignKey(OrderUser, on_delete=models.CASCADE, related_name='orders')
+    order_items = models.ManyToManyField(OrderItem, related_name='orders')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Order {self.id} - {self.status}"
