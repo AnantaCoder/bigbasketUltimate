@@ -1,126 +1,97 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import logo from "../assets/logo.png";
 import LoginSignupModal from "../features/LoginSignup";
+import { useSelector, useDispatch } from "react-redux";
+import { logoutUser } from "../app/slices/authSlice";
 
+// --- ICONS ---
 const MenuIcon = () => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width="20"
-    height="20"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className="mr-2"
-  >
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none"
+    stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <line x1="3" y1="12" x2="21" y2="12" />
     <line x1="3" y1="6" x2="21" y2="6" />
     <line x1="3" y1="18" x2="21" y2="18" />
   </svg>
 );
 
+const CloseIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none"
+    stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+    className="text-gray-700 hover:text-red-500 transition-colors">
+    <line x1="18" y1="6" x2="6" y2="18" />
+    <line x1="6" y1="6" x2="18" y2="18" />
+  </svg>
+);
+
 const ChevronDownIcon = ({ className }) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    viewBox="0 0 24 24"
-    className={className}
-  >
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor"
+    strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"
+    className={className}>
     <polyline points="6 9 12 15 18 9" />
   </svg>
 );
 
 const SearchIcon = () => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width="20"
-    height="20"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className="text-white"
-  >
+  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none"
+    stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+    className="text-white">
     <circle cx="11" cy="11" r="8" />
     <line x1="21" y1="21" x2="16.65" y2="16.65" />
   </svg>
 );
 
 const LocationPinIcon = () => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width="18"
-    height="18"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className="mr-2 text-emerald-600"
-  >
+  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none"
+    stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+    className="mr-2 text-emerald-600">
     <path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z" />
     <circle cx="12" cy="10" r="3" />
   </svg>
 );
 
 const UserIcon = () => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width="20"
-    height="20"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className="mr-2"
-  >
+  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none"
+    stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+    className="mr-2">
     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
     <circle cx="12" cy="7" r="4" />
   </svg>
 );
 
 const BasketIcon = () => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width="24"
-    height="24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className="text-emerald-600"
-  >
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none"
+    stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+    className="text-emerald-600">
     <path d="M5 11h14l-1.5 6.5a2 2 0 0 1-2 1.5H8.5a2 2 0 0 1-2-2.5L5 11z" />
     <path d="M17.5 11l-1.5-7h-8L6.5 11" />
   </svg>
 );
 
 function Navbar() {
- const [showModal, setShowModal] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const dispatch = useDispatch();
+
+  const { user, isAuthenticated } = useSelector((state) => state.auth);
+
+  // Prevent body scroll on mobile menu
+  useEffect(() => {
+    document.body.style.overflow = isMobileMenuOpen ? "hidden" : "auto";
+    return () => { document.body.style.overflow = "auto"; };
+  }, [isMobileMenuOpen]);
+
   return (
     <header className="bg-gradient-to-r from-white to-gray-50 shadow-lg font-sans">
       {/* Top bar */}
       <div className="border-b border-gray-200">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between py-4">
-            {/* Logo - Made Bigger */} 
+            {/* Logo */}
             <div className="flex items-center">
-              <img
-                src={logo}
-                alt="BigBasket Logo"
-                className="h-10 w-auto scale-250 transition-transform duration-200"
-              />
+              <img src={logo} alt="Logo" className="h-10 w-auto scale-220" />
             </div>
 
-            {/* Search Bar - Enhanced Design */}
+            {/* Search Bar - Desktop */}
             <div className="hidden lg:flex flex-grow max-w-3xl mx-8">
               <div className="relative w-full group">
                 <input
@@ -134,10 +105,10 @@ function Navbar() {
               </div>
             </div>
 
-            {/* Right Side - Enhanced */}
-            <div className="flex items-center space-x-8">
+            {/* Right Side */}
+            <div className="flex items-center space-x-4 md:space-x-8">
               {/* Location */}
-              <div className="hidden md:flex items-center group cursor-pointer">
+              <div className="hidden lg:flex items-center group cursor-pointer">
                 <LocationPinIcon />
                 <div className="text-sm">
                   <div className="font-bold text-gray-800 group-hover:text-emerald-600 transition-colors">
@@ -148,23 +119,37 @@ function Navbar() {
                 <ChevronDownIcon className="h-4 w-4 ml-2 text-gray-500 group-hover:text-emerald-600 transition-colors" />
               </div>
 
-              {/* Login */}
-              <div
-                onClick={() => setShowModal(true)} // 👈 open modal
-                className="hidden md:flex items-center text-sm text-gray-700 hover:text-emerald-600 cursor-pointer group transition-all duration-200 hover:bg-emerald-50 px-3 py-2 rounded-lg"
-              >
-                <UserIcon />
-                <div>
-                  <div className="font-semibold">Login</div>
-                  <div className="text-xs text-gray-500">Sign Up</div>
+              {/* Auth Section */}
+              {!isAuthenticated ? (
+                <div
+                  onClick={() => setShowModal(true)}
+                  className="hidden lg:flex items-center text-sm text-gray-700 hover:text-emerald-600 cursor-pointer group transition-all duration-200 hover:bg-emerald-50 px-3 py-2 rounded-lg"
+                >
+                  <UserIcon />
+                  <div>
+                    <div className="font-semibold">Login</div>
+                    <div className="text-xs text-gray-500">Sign Up</div>
+                  </div>
                 </div>
-              </div>
-              {showModal && <LoginSignupModal 
-                closeModal={() => setShowModal(false)}
-            />}
+              ) : (
+                <div className="hidden lg:flex items-center space-x-3">
+                  <span className="text-sm font-semibold text-gray-700">
+                    Hi, {user?.first_name || user?.email}
+                  </span>
+                  <button
+                    onClick={() => dispatch(logoutUser())}
+                    className="text-sm text-red-600 font-medium hover:underline"
+                  >
+                    Logout
+                  </button>
+                </div>
+              )}
+              {showModal && (
+                <LoginSignupModal closeModal={() => setShowModal(false)} />
+              )}
 
-              {/* Basket - Enhanced Design */}
-              <div className="relative flex items-center bg-gradient-to-r from-gray-50 to-gray-100 hover:from-emerald-50 hover:to-emerald-100 px-4 py-3 rounded-xl cursor-pointer group transition-all duration-300 shadow-sm hover:shadow-md border border-gray-200 hover:border-emerald-200">
+              {/* Basket */}
+              <div className="relative flex items-center bg-gradient-to-r from-gray-50 to-gray-100 hover:from-emerald-50 hover:to-emerald-100 p-2 md:px-4 md:py-3 rounded-xl cursor-pointer group transition-all duration-300 shadow-sm hover:shadow-md border border-gray-200 hover:border-emerald-200">
                 <BasketIcon />
                 <div className="ml-3 text-sm hidden xl:block">
                   <div className="font-bold text-gray-800 group-hover:text-emerald-700">
@@ -176,49 +161,95 @@ function Navbar() {
                   0
                 </span>
               </div>
+
+              {/* Mobile Hamburger */}
+              <div className="lg:hidden">
+                <button
+                  onClick={() => setIsMobileMenuOpen(true)}
+                  className="p-2 rounded-md text-gray-700 hover:bg-gray-100 focus:outline-none"
+                >
+                  <MenuIcon />
+                </button>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Bottom bar - Enhanced */}
+      {/* Bottom Nav - Desktop */}
       <div className="container mx-auto px-4 hidden lg:block bg-gradient-to-r from-gray-50 to-white">
         <div className="flex items-center justify-between py-3">
           <button className="bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white font-bold py-3 px-6 rounded-xl flex items-center text-sm transition-all duration-300 shadow-md hover:shadow-lg hover:scale-105">
             <MenuIcon />
-            SHOP BY CATEGORY
-            <ChevronDownIcon className="h-5 w-5 ml-2" />
+            <span className="mr-2">SHOP BY CATEGORY</span>
+            <ChevronDownIcon className="h-5 w-5" />
           </button>
-
           <div className="flex items-center space-x-8 text-sm font-semibold">
-            <a
-              href="#"
-              className="text-gray-600 hover:text-emerald-600 flex items-center transition-all duration-200 hover:bg-emerald-50 px-3 py-2 rounded-lg group"
-            >
-              <LocationPinIcon />
-              <span className="group-hover:scale-105 transition-transform">
-                OFFERS
-              </span>
-            </a>
-            <a
-              href="#"
-              className="text-gray-600 hover:text-emerald-600 transition-all duration-200 hover:bg-emerald-50 px-3 py-2 rounded-lg hover:scale-105"
-            >
-              bb SPECIALTY
-            </a>
-            <a
-              href="#"
-              className="text-gray-600 hover:text-emerald-600 transition-all duration-200 hover:bg-emerald-50 px-3 py-2 rounded-lg hover:scale-105"
-            >
-              bb MUNCHNUTS
-            </a>
-            <a
-              href="#"
-              className="text-gray-600 hover:text-emerald-600 transition-all duration-200 hover:bg-emerald-50 px-3 py-2 rounded-lg hover:scale-105"
-            >
-              GENIUS
-            </a>
+            <a href="#" className="text-gray-600 hover:text-emerald-600 px-3 py-2 rounded-lg">OFFERS</a>
+            <a href="#" className="text-gray-600 hover:text-emerald-600 px-3 py-2 rounded-lg">bb SPECIALTY</a>
+            <a href="#" className="text-gray-600 hover:text-emerald-600 px-3 py-2 rounded-lg">bb MUNCHNUTS</a>
+            <a href="#" className="text-gray-600 hover:text-emerald-600 px-3 py-2 rounded-lg">GENIUS</a>
           </div>
+        </div>
+      </div>
+
+      {/* Mobile Menu */}
+      <div className={`fixed inset-0 z-50 transform transition-transform duration-300 ease-in-out lg:hidden ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"}`}>
+        <div className="absolute inset-0 bg-black/40" onClick={() => setIsMobileMenuOpen(false)}></div>
+        <div className="relative w-4/5 max-w-xs h-full bg-white shadow-xl p-6">
+          <div className="flex items-center justify-between mb-8">
+            <img src={logo} alt="Logo" className="h-8 w-auto" />
+            <button onClick={() => setIsMobileMenuOpen(false)} className="p-1">
+              <CloseIcon />
+            </button>
+          </div>
+          <nav className="flex flex-col space-y-5 text-gray-700 font-semibold">
+            {!isAuthenticated ? (
+              <div
+                onClick={() => {
+                  setShowModal(true);
+                  setIsMobileMenuOpen(false);
+                }}
+                className="flex items-center text-md cursor-pointer group"
+              >
+                <UserIcon />
+                <span>Login / Sign Up</span>
+              </div>
+            ) : (
+              <div className="flex flex-col space-y-3">
+                <span className="text-sm">Hi, {user?.first_name || user?.email}</span>
+                <button
+                  onClick={() => {
+                    dispatch(logoutUser());
+                    setIsMobileMenuOpen(false);
+                  }}
+                  className="text-red-600 font-medium hover:underline text-left"
+                >
+                  Logout
+                </button>
+              </div>
+            )}
+
+            <div className="flex items-center group cursor-pointer border-t pt-4">
+              <LocationPinIcon />
+              <div className="text-sm">
+                <div className="font-bold text-gray-800">560004, Bangalore</div>
+              </div>
+            </div>
+
+            <button className="w-full bg-emerald-600 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center text-sm mt-4">
+              <MenuIcon />
+              <span className="mx-2">SHOP BY CATEGORY</span>
+              <ChevronDownIcon className="h-5 w-5" />
+            </button>
+
+            <div className="flex flex-col space-y-4 pt-4 border-t">
+              <a href="#" className="hover:text-emerald-600">OFFERS</a>
+              <a href="#" className="hover:text-emerald-600">bb SPECIALTY</a>
+              <a href="#" className="hover:text-emerald-600">bb MUNCHNUTS</a>
+              <a href="#" className="hover:text-emerald-600">GENIUS</a>
+            </div>
+          </nav>
         </div>
       </div>
     </header>

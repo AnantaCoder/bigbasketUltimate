@@ -31,7 +31,7 @@ class ItemListCreateAPIView(APIView):
         if user.is_authenticated and hasattr(user, 'seller'):
             items = Item.objects.filter(seller=user.seller)
         else:
-            items = Item.objects.filter(is_active=True, is_in_stock=True)
+            items = Item.objects.filter(is_active=True)
         
         serializer = ItemSerializer(items, many=True)
         return Response(serializer.data)
@@ -125,7 +125,6 @@ class CartItemAPIView(APIView):
         return Response({'detail': 'No item_ids provided.'}, status=status.HTTP_400_BAD_REQUEST)
     
 # OrderUser CRUD
-
 class OrderUserListCreateAPIView(generics.ListCreateAPIView):
     queryset = OrderUser.objects.all()
     serializer_class = OrderUserSerializer
@@ -137,14 +136,12 @@ class OrderUserListCreateAPIView(generics.ListCreateAPIView):
 class OrderUserRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = OrderUser.objects.all()
     serializer_class = OrderUserSerializer
-    permission_classes = [permissions.IsAuthenticated]
 
 # OrderItem CRUD
 
 class OrderItemListCreateAPIView(generics.ListCreateAPIView):
     queryset = OrderItem.objects.all()
     serializer_class = OrderItemSerializer
-    permission_classes = [permissions.IsAuthenticated]
 
     def perform_create(self, serializer):
         original_item = serializer.validated_data.get('original_item')
@@ -155,15 +152,12 @@ class OrderItemListCreateAPIView(generics.ListCreateAPIView):
 class OrderItemRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = OrderItem.objects.all()
     serializer_class = OrderItemSerializer
-    permission_classes = [permissions.IsAuthenticated]
 
 # Order CRUD
 class OrderListCreateAPIView(generics.ListCreateAPIView):
     queryset = Order.objects.all()
     serializer_class = OrderSerializer
-    permission_classes = [permissions.IsAuthenticated]
 
 class OrderRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Order.objects.all()
     serializer_class = OrderSerializer
-    permission_classes = [permissions.IsAuthenticated]
