@@ -1,6 +1,9 @@
-from django.urls import path 
+from django.urls import path , include
 from store.views import *
+from rest_framework.routers import DefaultRouter
 
+router = DefaultRouter()
+router.register(r"new-items", ItemViewSet, basename="item")
 
 urlpatterns = [
     path('categories/', CategoryListAPIView.as_view(), name='category-view'),
@@ -19,4 +22,5 @@ urlpatterns = [
     # Order endpoints
     path('orders/', OrderListCreateAPIView.as_view(), name='order-list-create'),
     path('orders/<int:pk>/', OrderRetrieveUpdateDestroyAPIView.as_view(), name='order-detail'),
+     path("", include(router.urls)),
 ]

@@ -1,11 +1,16 @@
 import React from 'react';
+import { useDispatch } from 'react-redux';
+import { addItemToCart } from '../app/slices/CartSlice'; // Adjust this import path as needed
 
 const Card = ({ item }) => {
+  const dispatch = useDispatch();
+
   // Return null or a placeholder if no item data is provided
   if (!item) {
     return null; 
   }
 
+  // Destructure all required properties from the item object
   const {
     id,
     item_name,
@@ -15,16 +20,22 @@ const Card = ({ item }) => {
     is_in_stock,
     manufacturer,
   } = item;
+  
+  // Handler for the "Add to Cart" button click
+  const handleAddToCart = () => {
+    // Dispatch the action with the item's ID
+    dispatch(addItemToCart(id));
+  };
 
-  // Safely get the first image URL or use a placeholder
-  const imageUrl = image_urls?.[0] || 'https://images.pexels.com/photos/33649574/pexels-photo-33649574.jpeg';
+  // Safely get the first image URL or use a placeholder if none exist
+  const imageUrl = image_urls?.[0] || 'https://images.pexels.com/photos/32333373/pexels-photo-32333373.jpeg';
 
   return (
     <article className="group flex flex-col overflow-hidden rounded-2xl bg-white shadow-lg transition-all duration-300 ease-in-out hover:shadow-2xl hover:-translate-y-1">
       {/* --- Image Section --- */}
       <div className="relative overflow-hidden">
         <img 
-          src={imageUrl} // Fixed: Using the dynamic imageUrl from props
+          src={imageUrl}
           alt={item_name}
           className="aspect-[4/3] w-full object-cover transition-transform duration-300 group-hover:scale-105"
         />
@@ -56,6 +67,7 @@ const Card = ({ item }) => {
             <p className="text-2xl font-extrabold text-gray-900">₹{price}</p>
           </div>
           <button
+            onClick={handleAddToCart} // Add the onClick handler here
             disabled={!is_in_stock}
             className={`rounded-lg px-4 py-2 text-sm font-bold text-white shadow-md transition-all duration-200 ${
               is_in_stock

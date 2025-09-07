@@ -9,6 +9,10 @@ from django.db.models import Q
 from store.permissions import IsSellerOrReadOnly
 from django.http import Http404
 from rest_framework import generics
+from rest_framework import viewsets, permissions
+from rest_framework.parsers import MultiPartParser, FormParser
+from .models import Item
+from .serializers import ItemSerializer
 
 class CategoryListAPIView(APIView):
     
@@ -22,31 +26,34 @@ class CategoryListAPIView(APIView):
     
 # views for single category will be there as well 
 class ItemListCreateAPIView(APIView):
-   
     permission_classes = [permissions.AllowAny]
+    parser_classes = [MultiPartParser, FormParser]  
 
     def get(self, request, format=None):
-        
         user = self.request.user
         if user.is_authenticated and hasattr(user, 'seller'):
             items = Item.objects.filter(seller=user.seller)
         else:
-            items = Item.objects.filter(is_active=True)
-        
+            items = Item.objects.all()
         serializer = ItemSerializer(items, many=True)
         return Response(serializer.data)
 
     def post(self, request, format=None):
-        """
-        Create a new item, assigning it to the logged-in seller.
-        """
         serializer = ItemSerializer(data=request.data)
         if serializer.is_valid():
-            # The permission class ensures request.user.seller exists.
             serializer.save(seller=request.user.seller)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+class ItemViewSet(viewsets.ModelViewSet):
+    queryset = Item.objects.all()
+    serializer_class = ItemSerializer
+    permission_classes = [permissions.IsAuthenticated, IsSellerOrReadOnly]
+    parser_classes = [MultiPartParser, FormParser]  
+
+    def perform_create(self, serializer):
+        # CORRECTED: Assign the related seller object, not the user object.
+        serializer.save(seller=self.request.user.seller)
 
 class ItemDetailAPIView(APIView):
     
@@ -65,7 +72,6 @@ class ItemDetailAPIView(APIView):
 
     def put(self, request, pk, format=None):
         item = self.get_object(pk)
-        # Manually check object-level permissions for write operations
         self.check_object_permissions(request, item)
         serializer = ItemSerializer(item, data=request.data)
         if serializer.is_valid():
@@ -75,7 +81,6 @@ class ItemDetailAPIView(APIView):
 
     def delete(self, request, pk, format=None):
         item = self.get_object(pk)
-        # Manually check object-level permissions for write operations
         self.check_object_permissions(request, item)
         item.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
@@ -136,12 +141,15 @@ class OrderUserListCreateAPIView(generics.ListCreateAPIView):
 class OrderUserRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = OrderUser.objects.all()
     serializer_class = OrderUserSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
 
 # OrderItem CRUD
 
 class OrderItemListCreateAPIView(generics.ListCreateAPIView):
     queryset = OrderItem.objects.all()
     serializer_class = OrderItemSerializer
+    permission_classes = [permissions.IsAuthenticated]
 
     def perform_create(self, serializer):
         original_item = serializer.validated_data.get('original_item')
@@ -152,12 +160,15 @@ class OrderItemListCreateAPIView(generics.ListCreateAPIView):
 class OrderItemRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = OrderItem.objects.all()
     serializer_class = OrderItemSerializer
+    permission_classes = [permissions.IsAuthenticated]
 
 # Order CRUD
 class OrderListCreateAPIView(generics.ListCreateAPIView):
     queryset = Order.objects.all()
     serializer_class = OrderSerializer
+    permission_classes = [permissions.IsAuthenticated]
 
 class OrderRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Order.objects.all()
     serializer_class = OrderSerializer
+    permission_classes = [permissions.IsAuthenticated]

@@ -86,7 +86,7 @@ class CartSerializer(serializers.ModelSerializer):
 
     def get_total_price (self , obj):
             return sum(item.price for item in obj.items.all())
-        
+
 # OrderUser serializer
 class OrderUserSerializer(serializers.ModelSerializer):
     user = serializers.StringRelatedField(read_only=True)
