@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from "react";
 import logo from "../assets/logo.png";
 import LoginSignupModal from "../features/LoginSignup";
+import CartDropdown from "./CartDropdown";
+import CategoryDropdown from "./CategoryDropdown";
 import { useSelector, useDispatch } from "react-redux";
 import { logoutUser } from "../app/slices/authSlice";
-import { DiscAlbum } from "lucide-react";
 import { fetchItems } from "../app/slices/itemsSlice";
+import { selectCart } from "../app/slices/CartSlice";
 
 // --- ICONS ---
 const MenuIcon = () => (
@@ -72,17 +74,19 @@ const BasketIcon = () => (
 function Navbar() {
   const [showModal, setShowModal] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const dispatch = useDispatch();
   const [searchQuery,setSearchQuery] = useState("")
 
-
   const { user, isAuthenticated } = useSelector((state) => state.auth);
+  const cart = useSelector(selectCart);
 
-  // Prevent body scroll on mobile menu
+  // Prevent body scroll on mobile menu or cart or category dropdown
   useEffect(() => {
-    document.body.style.overflow = isMobileMenuOpen ? "hidden" : "auto";
+    document.body.style.overflow = isMobileMenuOpen || isCartOpen || isCategoryOpen ? "hidden" : "auto";
     return () => { document.body.style.overflow = "auto"; };
-  }, [isMobileMenuOpen]);
+  }, [isMobileMenuOpen, isCartOpen, isCategoryOpen]);
 
   const handleSearch = (e)=>{
     e.preventDefault();
@@ -93,8 +97,16 @@ function Navbar() {
     }
   }
 
+  const toggleCart = () => {
+    setIsCartOpen(!isCartOpen);
+  };
+
+  const toggleCategory = () => {
+    setIsCategoryOpen(!isCategoryOpen);
+  };
+
   return (
-    <header className="bg-gradient-to-r from-white to-gray-50 shadow-lg font-sans">
+    <header className="bg-gradient-to-r from-white to-gray-50 shadow-lg font-sans relative">
       {/* Top bar */}
       <div className="border-b border-gray-200">
         <div className="container mx-auto px-4">
@@ -127,7 +139,7 @@ function Navbar() {
             </form>
 
             {/* Right Side */}
-            <div className="flex items-center space-x-4 md:space-x-8">
+            <div className="flex items-center space-x-4 md:space-x-8 relative">
               {/* Location */}
               <div className="hidden lg:flex items-center group cursor-pointer">
                 <LocationPinIcon />
@@ -170,18 +182,29 @@ function Navbar() {
               )}
 
               {/* Basket */}
-              <div className="relative flex items-center bg-gradient-to-r from-gray-50 to-gray-100 hover:from-emerald-50 hover:to-emerald-100 p-2 md:px-4 md:py-3 rounded-xl cursor-pointer group transition-all duration-300 shadow-sm hover:shadow-md border border-gray-200 hover:border-emerald-200">
+              <div
+                onClick={toggleCart}
+                className="relative flex items-center bg-gradient-to-r from-gray-50 to-gray-100 hover:from-emerald-50 hover:to-emerald-100 p-2 md:px-4 md:py-3 rounded-xl cursor-pointer group transition-all duration-300 shadow-sm hover:shadow-md border border-gray-200 hover:border-emerald-200"
+                aria-label="Toggle cart dropdown"
+              >
                 <BasketIcon />
                 <div className="ml-3 text-sm hidden xl:block">
                   <div className="font-bold text-gray-800 group-hover:text-emerald-700">
                     My Basket
                   </div>
-                  <div className="text-gray-500 text-xs">0 Items • ₹0</div>
+                  <div className="text-gray-500 text-xs">
+                    {cart?.items?.length || 0} Items • ₹{cart?.total_price || 0}
+                  </div>
                 </div>
                 <span className="absolute -top-2 -right-2 bg-gradient-to-r from-red-500 to-red-600 text-white text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center shadow-md">
-                  0
+                  {cart?.items?.length || 0}
                 </span>
               </div>
+
+              {isCartOpen && <CartDropdown onClose={() => setIsCartOpen(false)} />}
+
+              {/* Shop by Category */}
+              {/* Removed the Shop by Category button on the right side beside My Basket as per user request */}
 
               {/* Mobile Hamburger */}
               <div className="lg:hidden">
@@ -198,13 +221,19 @@ function Navbar() {
       </div>
 
       {/* Bottom Nav - Desktop */}
-      <div className="container mx-auto px-4 hidden lg:block bg-gradient-to-r from-gray-50 to-white">
+      <div className="container mx-auto px-4 hidden lg:block bg-gradient-to-r from-gray-50 to-white relative">
         <div className="flex items-center justify-between py-3">
-          <button className="bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white font-bold py-3 px-6 rounded-xl flex items-center text-sm transition-all duration-300 shadow-md hover:shadow-lg hover:scale-105">
+          <button
+            onClick={() => setIsCategoryOpen(!isCategoryOpen)}
+            className="bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white font-bold py-3 px-6 rounded-xl flex items-center text-sm transition-all duration-300 shadow-md hover:shadow-lg hover:scale-105"
+            aria-haspopup="true"
+            aria-expanded={isCategoryOpen}
+          >
             <MenuIcon />
             <span className="mr-2">SHOP BY CATEGORY</span>
-            <ChevronDownIcon className="h-5 w-5" />
+            <ChevronDownIcon className={`h-5 w-5 transition-transform duration-300 ${isCategoryOpen ? 'transform rotate-180' : ''}`} />
           </button>
+          {isCategoryOpen && <CategoryDropdown />}
           <div className="flex items-center space-x-8 text-sm font-semibold">
             <a href="#" className="text-gray-600 hover:text-emerald-600 px-3 py-2 rounded-lg">OFFERS</a>
             <a href="#" className="text-gray-600 hover:text-emerald-600 px-3 py-2 rounded-lg">bb SPECIALTY</a>

@@ -88,7 +88,7 @@ export const removeItemFromCart = createAsyncThunk(
         toast.update(toastId, { render: "Please log in first", type: "error", isLoading: false, autoClose: 3000 });
         return rejectWithValue("User not authenticated");
       }
-      
+
       // 2. Add headers to the request (for axios delete with body)
       const config = {
         headers: {
@@ -108,6 +108,46 @@ export const removeItemFromCart = createAsyncThunk(
     } catch (error) {
       toast.update(toastId, {
         render: error.response?.data?.detail || "Failed to remove item",
+        type: "error",
+        isLoading: false,
+        autoClose: 3000,
+      });
+      return rejectWithValue(error.response?.data);
+    }
+  }
+);
+
+// Update item quantity in the cart
+export const updateItemQuantity = createAsyncThunk(
+  "cart/updateItemQuantity",
+  async ({ itemId, quantity }, { rejectWithValue }) => {
+    const toastId = toast.loading("Updating quantity...");
+    try {
+      // 1. Get token from localStorage
+      const token = localStorage.getItem("access_token");
+      if (!token) {
+        toast.update(toastId, { render: "Please log in first", type: "error", isLoading: false, autoClose: 3000 });
+        return rejectWithValue("User not authenticated");
+      }
+
+      // 2. Add headers to the request
+      const config = {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      };
+
+      const response = await api.patch("/store/cart/", { item_id: itemId, quantity }, config);
+      toast.update(toastId, {
+        render: "Quantity updated",
+        type: "success",
+        isLoading: false,
+        autoClose: 2000,
+      });
+      return response.data;
+    } catch (error) {
+      toast.update(toastId, {
+        render: error.response?.data?.detail || "Failed to update quantity",
         type: "error",
         isLoading: false,
         autoClose: 3000,
@@ -165,6 +205,14 @@ const cartSlice = createSlice({
         }
       })
       .addCase(removeItemFromCart.rejected, (state, action) => {
+        state.error = action.payload;
+      })
+
+      // Update Item Quantity
+      .addCase(updateItemQuantity.fulfilled, (state, action) => {
+        state.cart = action.payload;
+      })
+      .addCase(updateItemQuantity.rejected, (state, action) => {
         state.error = action.payload;
       });
   },
