@@ -109,11 +109,14 @@ class CartItemAPIView(APIView):
         if hasattr(user, 'seller'):
             return Response({'detail': 'Sellers cannot add to cart.'}, status=status.HTTP_403_FORBIDDEN)
         cart, _ = Cart.objects.get_or_create(user=user, seller=None)
-        serializer = CartSerializer(cart, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
+        item_ids = request.data.get('item_ids', [])
+        if item_ids:
+            items = Item.objects.filter(id__in=item_ids)
+            cart.items.add(*items)
+            cart.save()
+            serializer = CartSerializer(cart)
             return Response(serializer.data, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response({'detail': 'No item_ids provided.'}, status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request, format=None):
         user = request.user
