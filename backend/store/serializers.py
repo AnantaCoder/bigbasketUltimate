@@ -1,7 +1,24 @@
 from rest_framework import serializers
 from store.models import Item, Category, Cart, OrderUser, OrderItem, Order
 from accounts.models import Seller 
+from supabase import create_client , Client
+from django.conf import settings
+import uuid
+import os
 
+supabase_client: Client = None
+SUPABASE_BUCKET_NAME = None
+
+try:
+    if settings.SUPABASE_URL and settings.SUPABASE_KEY and settings.SUPABASE_BUCKET_NAME:
+        supabase_client = create_client(settings.SUPABASE_URL, settings.SUPABASE_KEY)
+        SUPABASE_BUCKET_NAME = settings.SUPABASE_BUCKET_NAME
+    else:
+        print("Supabase settings (URL, Key, or Bucket Name) are not fully configured in settings.py.")
+except AttributeError as e:
+    print(f"Warning: Supabase settings not fully loaded. Ensure .env and settings.py are correct. Error: {e}")
+except Exception as e:
+    print(f"Error initializing Supabase client: {e}")
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
@@ -20,14 +37,27 @@ class CategorySerializer(serializers.ModelSerializer):
 
 
 class ItemSerializer(serializers.ModelSerializer):
-    seller = serializers.StringRelatedField(read_only=True)  
-    category = CategorySerializer(read_only=True) 
-    category_id = serializers.PrimaryKeyRelatedField( 
+    seller = serializers.StringRelatedField(read_only=True)
+    category = CategorySerializer(read_only=True)
+    category_id = serializers.PrimaryKeyRelatedField(
         queryset=Category.objects.all(),
         source="category",
         write_only=True,
         required=False,
         allow_null=True
+    )
+
+    image = serializers.ListField(
+        child=serializers.ImageField(),
+        allow_empty=True,
+        required=False,
+        write_only=True
+    )
+
+    image_urls = serializers.ListField(
+        child=serializers.URLField(),
+        allow_empty=True,
+        read_only=True
     )
 
     class Meta:
@@ -44,6 +74,7 @@ class ItemSerializer(serializers.ModelSerializer):
             "price",
             "image_urls",
             "sku",
+            "image",
             "description",
             "is_active",
             "refers_token",
@@ -51,7 +82,50 @@ class ItemSerializer(serializers.ModelSerializer):
             "updated_at",
             "is_in_stock",
         ]
-        read_only_fields = ["id", "created_at", "updated_at", "is_in_stock"]
+        read_only_fields = ["id", "seller", "created_at", "updated_at", "is_in_stock", "image_urls"]
+
+    def create(self, validated_data):
+        user = self.context['request'].user
+        if not hasattr(user, "seller"):
+            raise serializers.ValidationError("Only sellers can create items")
+
+        # 🔥 Remove fields not in Item model
+        images = validated_data.pop("image", [])
+        validated_data.pop("image_urls", None)
+
+        uploaded_image_urls = []
+
+        if supabase_client and SUPABASE_BUCKET_NAME:
+            for img in images:
+                file_extension = os.path.splitext(img.name)[1]
+                unique_filename = f"{uuid.uuid4()}{file_extension}"
+
+                try:
+                    supabase_client.storage.from_(SUPABASE_BUCKET_NAME).upload(
+                        unique_filename,
+                        img.read(),
+                        {"content-type": img.content_type}
+                    )
+                    public_url = supabase_client.storage.from_(SUPABASE_BUCKET_NAME).get_public_url(unique_filename)
+                    if public_url:
+                        uploaded_image_urls.append(public_url)
+                except Exception as e:
+                    raise serializers.ValidationError(f"Image upload failed for {img.name}: {e}")
+
+        # ✅ Create Item with valid fields only
+        item = Item.objects.create(
+            seller=user.seller,
+            **validated_data
+        )
+
+        # ✅ Save Supabase image URLs if Item model has a field
+        if hasattr(item, "image_urls"):
+            item.image_urls = uploaded_image_urls
+            item.save()
+
+        return item
+
+
 
 # cart serializers 
 class CartSerializer(serializers.ModelSerializer):

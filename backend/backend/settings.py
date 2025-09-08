@@ -120,7 +120,7 @@ DATABASES = {
     }
 }
 try:
-    anon_key_parts = env("SUPABASE_ANON_KEY").split(".")
+    anon_key_parts = env("SUPABASE_SERVICE_ROLE_KEY").split(".")
     if len(anon_key_parts) > 1:
         # Pad the base64 string if its length is not a multiple of 4
         padded_payload = anon_key_parts[1] + "=" * (4 - len(anon_key_parts[1]) % 4)
@@ -145,7 +145,7 @@ except Exception as e:
         f"Error parsing SUPABASE_ANON_KEY for URL: {e}. Set SUPABASE_URL manually if issues persist."
     )
 
-SUPABASE_KEY = env("SUPABASE_ANON_KEY")
+SUPABASE_KEY = env("SUPABASE_SERVICE_ROLE_KEY")
 
 SUPABASE_BUCKET_NAME = env("BUCKET_NAME")
 

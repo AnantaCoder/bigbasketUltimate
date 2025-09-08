@@ -3,6 +3,8 @@ import logo from "../assets/logo.png";
 import LoginSignupModal from "../features/LoginSignup";
 import { useSelector, useDispatch } from "react-redux";
 import { logoutUser } from "../app/slices/authSlice";
+import { DiscAlbum } from "lucide-react";
+import { fetchItems } from "../app/slices/itemsSlice";
 
 // --- ICONS ---
 const MenuIcon = () => (
@@ -71,6 +73,8 @@ function Navbar() {
   const [showModal, setShowModal] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const dispatch = useDispatch();
+  const [searchQuery,setSearchQuery] = useState("")
+
 
   const { user, isAuthenticated } = useSelector((state) => state.auth);
 
@@ -79,6 +83,15 @@ function Navbar() {
     document.body.style.overflow = isMobileMenuOpen ? "hidden" : "auto";
     return () => { document.body.style.overflow = "auto"; };
   }, [isMobileMenuOpen]);
+
+  const handleSearch = (e)=>{
+    e.preventDefault();
+    if(searchQuery.trim()){
+      dispatch(fetchItems({
+        search:searchQuery
+      }))
+    }
+  }
 
   return (
     <header className="bg-gradient-to-r from-white to-gray-50 shadow-lg font-sans">
@@ -92,18 +105,26 @@ function Navbar() {
             </div>
 
             {/* Search Bar - Desktop */}
-            <div className="hidden lg:flex flex-grow max-w-3xl mx-8">
+            <form
+              onSubmit={handleSearch}
+              className="hidden lg:flex flex-grow max-w-3xl mx-8"
+            >
               <div className="relative w-full group">
                 <input
                   type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search for Products..."
                   className="w-full border-2 border-gray-200 rounded-xl py-3 pl-5 pr-14 text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all duration-300 shadow-sm group-hover:shadow-md"
                 />
-                <button className="absolute inset-y-0 right-0 flex items-center justify-center px-4 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 rounded-r-xl transition-all duration-300 shadow-md hover:shadow-lg">
+                <button
+                  type="submit"
+                  className="absolute inset-y-0 right-0 flex items-center justify-center px-4 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 rounded-r-xl transition-all duration-300 shadow-md hover:shadow-lg"
+                >
                   <SearchIcon />
                 </button>
               </div>
-            </div>
+            </form>
 
             {/* Right Side */}
             <div className="flex items-center space-x-4 md:space-x-8">

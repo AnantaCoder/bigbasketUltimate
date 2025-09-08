@@ -4,25 +4,22 @@ import api from "../../services/api";
 
 export const fetchItems = createAsyncThunk(
   "items/fetchItems",
-  async (params = {}, { rejectWithValue }) => {
-    // const toastId = toast.loading("Loading Items ");
+  async ({ search, ...params } = {}, { rejectWithValue }) => {
     try {
-      const response = await api.get("/store/items/", { params });
-    //   toast.update(toastId, {
-    //     render: "items loaded ",
-    //   });
+      const response = await api.get("/store/new-items/", {
+        params: {
+          ...params,
+          ...(search ? { search } : {}), 
+        },
+      });
+
       return response.data;
     } catch (error) {
-    //   toast.update(toastId, {
-    //     render:
-    //       error.response?.data.error ||
-    //       error.response?.data.detail ||
-    //       "failed to load items ",
-    //   });
       return rejectWithValue(error.response?.data || error.message);
     }
   }
 );
+
 
 export const fetchItem = createAsyncThunk(
   "items/fetchItem",
@@ -53,44 +50,27 @@ export const createItem = createAsyncThunk(
 
     try {
       const token = localStorage.getItem("access_token");
+
+      // ✅ Always use a new FormData
       const formData = new FormData();
 
-      // required fields
       formData.append("item_name", itemData.item_name);
       formData.append("item_type", itemData.item_type);
       formData.append("manufacturer", itemData.manufacturer);
+      formData.append("category_id", itemData.category_id);
+      formData.append("quantity", itemData.quantity);
+      formData.append("price", itemData.price);
+      formData.append("description", itemData.description || "");
+      formData.append("sku", itemData.sku || "");
+      formData.append("refers_token", itemData.refers_token || "");
 
-      // category (MUST use category_id)
-      if (itemData.category_id) {
-        formData.append("category_id", itemData.category_id);
-      }
-
-      // numbers
-     const qty = Number.parseInt(itemData.quantity, 10);
-const price = Number.parseFloat(itemData.price);
-
-if (!Number.isNaN(qty)) {
-  formData.append("quantity", qty.toString()); // explicitly string
+      if (itemData.image && itemData.image.length > 0) {
+  itemData.image.forEach((file) => {
+    formData.append("image", file);  
+  });
 }
 
-if (!Number.isNaN(price)) {
-  formData.append("price", price.toString());
-}
-
-
-
-      // optional fields
-      if (itemData.description) formData.append("description", itemData.description);
-      if (itemData.sku) formData.append("sku", itemData.sku);
-      if (itemData.refers_token) formData.append("refers_token", itemData.refers_token);
-
-      // images -> must match model field: `image_urls`
-      if (itemData.image_urls && itemData.image_urls.length > 0) {
-        itemData.image_urls.forEach((file) => {
-          formData.append("image_urls", file)
-        });
-      }
-
+      // POST request
       const response = await api.post("/store/new-items/", formData, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -99,30 +79,27 @@ if (!Number.isNaN(price)) {
       });
 
       toast.update(toastId, {
-        render: "Item created",
+        render: "Item created successfully 🎉",
         type: "success",
         isLoading: false,
-        autoClose: 2000,
+        autoClose: 3000,
       });
 
       return response.data;
     } catch (error) {
-  console.error("Create Item Error:", error.response?.data);
+      toast.update(toastId, {
+        render: "Failed to create item ❌",
+        type: "error",
+        isLoading: false,
+        autoClose: 3000,
+      });
 
-  toast.update(toastId, {
-    render:
-      JSON.stringify(error.response?.data) || "Failed to create item",
-    type: "error",
-    isLoading: false,
-    autoClose: 3000,
-  });
-
-  return rejectWithValue(error.response?.data || error.message);
-}
-
+      return rejectWithValue(
+        error.response?.data || "Something went wrong"
+      );
+    }
   }
 );
-
 
 
 export const updateItem = createAsyncThunk(

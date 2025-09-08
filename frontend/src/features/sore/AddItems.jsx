@@ -122,7 +122,7 @@ function AddItems() {
       // The backend serializer's write field is 'category_id'
       category_id: formData.category,
       // Pass the actual file objects; the thunk will handle FormData
-      image_urls: imageFiles,
+      image: imageFiles,
     };
 
     dispatch(createItem(itemData)).then((res) => {

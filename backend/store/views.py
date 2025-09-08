@@ -10,10 +10,11 @@ from store.permissions import IsSellerOrReadOnly
 from django.http import Http404
 from rest_framework import generics
 from rest_framework import viewsets, permissions
-from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.parsers import MultiPartParser, FormParser , JSONParser
 from .models import Item
 from .serializers import ItemSerializer
-
+from rest_framework.filters import SearchFilter
+from django_filters.rest_framework import DjangoFilterBackend
 class CategoryListAPIView(APIView):
     
     permission_classes = [permissions.AllowAny]
@@ -27,7 +28,7 @@ class CategoryListAPIView(APIView):
 # views for single category will be there as well 
 class ItemListCreateAPIView(APIView):
     permission_classes = [permissions.AllowAny]
-    parser_classes = [MultiPartParser, FormParser]  
+    parser_classes = [MultiPartParser, FormParser , JSONParser]  
 
     def get(self, request, format=None):
         user = self.request.user
@@ -46,14 +47,18 @@ class ItemListCreateAPIView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class ItemViewSet(viewsets.ModelViewSet):
+    
+    permission_classes=[permissions.AllowAny]
     queryset = Item.objects.all()
     serializer_class = ItemSerializer
-    permission_classes = [permissions.IsAuthenticated, IsSellerOrReadOnly]
-    parser_classes = [MultiPartParser, FormParser]  
+    
+    parser_classes = [MultiPartParser, FormParser , JSONParser]  
+    filter_backends=[DjangoFilterBackend,SearchFilter]
+    search_fields=["item_name","description","manufacturer"]
 
     def perform_create(self, serializer):
-        # CORRECTED: Assign the related seller object, not the user object.
-        serializer.save(seller=self.request.user.seller)
+        seller = self.request.user.seller
+        serializer.save()
 
 class ItemDetailAPIView(APIView):
     

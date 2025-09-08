@@ -37,12 +37,20 @@ return <div className="p-6 text-red-500">Error: {error}</div>;
 
 
 if (!items || !items.length) {
-return (
-<div className="p-6 text-center text-gray-500">
-No items found.
-</div>
-);
+  return (
+    <div className="w-full h-screen flex flex-col items-center justify-center bg-gray-100">
+      <img
+        src="./no.png"
+        alt="No items found"
+        className="max-w-md w-full object-contain mb-6 scale-400"
+      />
+      <p className="text-gray-500 text-lg md:text-xl font-medium">
+        No items found.
+      </p>
+    </div>
+  );
 }
+
 
 
 return (
