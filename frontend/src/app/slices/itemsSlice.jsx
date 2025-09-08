@@ -6,19 +6,37 @@ export const fetchItems = createAsyncThunk(
   "items/fetchItems",
   async ({ search, ...params } = {}, { rejectWithValue }) => {
     try {
-      const response = await api.get("/store/new-items/", {
-        params: {
-          ...params,
-          ...(search ? { search } : {}), 
-        },
-      });
+      let allItems = [];
+      let page = 1;
+      let hasNext = true;
 
-      return response.data;
+      while (hasNext) {
+        const response = await api.get("/store/new-items/", {
+          params: {
+            ...params,
+            ...(search ? { search } : {}),
+            page, 
+          },
+        });
+
+        const data = response.data;
+
+        allItems = [...allItems, ...data.results];
+
+        if (data.next) {
+          page += 1;
+        } else {
+          hasNext = false;
+        }
+      }
+
+      return allItems;
     } catch (error) {
       return rejectWithValue(error.response?.data || error.message);
     }
   }
 );
+
 
 
 export const fetchItem = createAsyncThunk(
