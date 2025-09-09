@@ -33,7 +33,6 @@ function AddItems() {
     description: "",
     category: "",
   });
-
   const [imageFiles, setImageFiles] = useState([]);
   const [imagePreviews, setImagePreviews] = useState([]);
 

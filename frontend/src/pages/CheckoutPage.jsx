@@ -1,6 +1,27 @@
-import React from "react";
+import React, { useEffect } from "react";
+import { useSelector, useDispatch } from "react-redux";
+import { selectCart, fetchCart, selectCartStatus } from "../app/slices/CartSlice";
 
 function CheckoutPage() {
+  const dispatch = useDispatch();
+  const cart = useSelector(selectCart);
+  const status = useSelector(selectCartStatus);
+
+  useEffect(() => {
+    if (status === "idle") {
+      dispatch(fetchCart());
+    }
+  }, [status, dispatch]);
+
+  const totalAmountPayable = cart && cart.total_price !== undefined
+    ? cart.total_price
+    : cart && cart.items
+      ? cart.items.reduce((acc, item) => acc + item.price * (item.quantity || 1), 0)
+
+  // Assuming total savings is calculated as difference between some original price and current price
+  // For now, setting to 0 or you can calculate if you have original prices
+  const totalSavings = 0;
+
   return (
     <div className="min-h-screen bg-gray-100">
       {/* Header Bar */}
@@ -59,11 +80,11 @@ function CheckoutPage() {
           <h2 className="text-lg font-bold border-b pb-2">Order Summary</h2>
           <div className="flex justify-between">
             <span>Total Amount Payable</span>
-            <span className="font-semibold">₹491</span>
+            <span className="font-semibold">₹{totalAmountPayable}</span>
           </div>
           <div className="flex justify-between bg-green-100 text-green-800 p-2 rounded">
             <span>Total Savings</span>
-            <span className="font-semibold">₹1109 ▼</span>
+            <span className="font-semibold">₹{totalSavings} ▼</span>
           </div>
           <div className="bg-yellow-100 border border-yellow-400 p-3 rounded text-sm">
             Select your address and delivery slot to know accurate delivery charges. You can save more by applying a voucher!

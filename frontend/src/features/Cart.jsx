@@ -100,12 +100,25 @@ const CartPage = () => {
                 <span>Taxes</span>
                 <span className="font-medium">Calculated at checkout</span>
               </div>
-              <div className="flex justify-between text-xl font-bold text-gray-900 dark:text-white">
-                <span>Total</span>
-                <span>₹{cart.total_price}</span>
-              </div>
+            <div className="flex justify-between text-xl font-bold text-gray-900 dark:text-white">
+              <span>Total</span>
+              <span>
+                ₹
+                {cart.items
+                  ? cart.items.reduce(
+                      (acc, item) => acc + item.price * (item.quantity || 1),
+                      0
+                    )
+                  : 0}
+              </span>
             </div>
-            <button className="mt-8 w-full rounded-lg bg-blue-600 py-3 text-lg font-semibold text-white shadow-md transition-transform duration-200 hover:bg-blue-700 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">
+            </div>
+            <button
+              onClick={() => {
+                window.location.href = '/checkout';
+              }}
+              className="mt-8 w-full rounded-lg bg-blue-600 py-3 text-lg font-semibold text-white shadow-md transition-transform duration-200 hover:bg-blue-700 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50"
+            >
               Proceed to Checkout
             </button>
           </div>

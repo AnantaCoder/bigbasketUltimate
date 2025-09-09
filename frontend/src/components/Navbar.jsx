@@ -78,17 +78,20 @@ function Navbar() {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
+  const [isLocationSearchOpen, setIsLocationSearchOpen] = useState(false);
+  const [locationQuery, setLocationQuery] = useState("");
+  const [selectedLocation, setSelectedLocation] = useState("560004, Bangalore");
   const dispatch = useDispatch();
   const [searchQuery,setSearchQuery] = useState("")
 
   const { user, isAuthenticated } = useSelector((state) => state.auth);
   const cart = useSelector(selectCart);
 
-  // Prevent body scroll on mobile menu or cart or category dropdown or user dropdown
+  // Prevent body scroll on mobile menu or cart or category dropdown or user dropdown or location search
   useEffect(() => {
-    document.body.style.overflow = isMobileMenuOpen || isCartOpen || isCategoryOpen || isUserDropdownOpen ? "hidden" : "auto";
+    document.body.style.overflow = isMobileMenuOpen || isCartOpen || isCategoryOpen || isUserDropdownOpen || isLocationSearchOpen ? "hidden" : "auto";
     return () => { document.body.style.overflow = "auto"; };
-  }, [isMobileMenuOpen, isCartOpen, isCategoryOpen, isUserDropdownOpen]);
+  }, [isMobileMenuOpen, isCartOpen, isCategoryOpen, isUserDropdownOpen, isLocationSearchOpen]);
 
   const handleSearch = (e)=>{
     e.preventDefault();

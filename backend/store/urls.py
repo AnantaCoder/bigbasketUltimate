@@ -22,5 +22,6 @@ urlpatterns = [
     # Order endpoints
     path('orders/', OrderListCreateAPIView.as_view(), name='order-list-create'),
     path('orders/<int:pk>/', OrderRetrieveUpdateDestroyAPIView.as_view(), name='order-detail'),
+    path('search-address/', SearchAddressAPIView.as_view(), name='search-address'),
      path("", include(router.urls)),
 ]

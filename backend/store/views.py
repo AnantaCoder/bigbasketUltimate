@@ -180,3 +180,21 @@ class OrderRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Order.objects.all()
     serializer_class = OrderSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+class SearchAddressAPIView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request, format=None):
+        query = request.GET.get('q', '')
+        if not query:
+            return Response({'results': []})
+        # Mock search results for demonstration
+        results = [
+            {'id': 1, 'name': 'Bangalore, Karnataka', 'pincode': '560001'},
+            {'id': 2, 'name': 'Bangalore, Karnataka', 'pincode': '560002'},
+            {'id': 3, 'name': 'Mysore, Karnataka', 'pincode': '570001'},
+            {'id': 4, 'name': 'Hubli, Karnataka', 'pincode': '580001'},
+            {'id': 5, 'name': 'Mangalore, Karnataka', 'pincode': '575001'},
+        ]
+        filtered_results = [r for r in results if query.lower() in r['name'].lower() or query in r['pincode']]
+        return Response({'results': filtered_results})

@@ -1,5 +1,6 @@
 import React from 'react';
 import { useSelector, useDispatch } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import {
   User,
   ShoppingCart,
@@ -15,6 +16,7 @@ import { motion } from 'framer-motion';
 
 const UserDropdown = ({ onClose }) => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { user } = useSelector((state) => state.auth);
   const cart = useSelector(selectCart);
 
@@ -29,7 +31,7 @@ const UserDropdown = ({ onClose }) => {
       icon: User,
       label: 'My Account',
       onClick: () => {
-        console.log('Navigate to My Account');
+        navigate('/profile');
         onClose();
       },
     },
@@ -37,7 +39,7 @@ const UserDropdown = ({ onClose }) => {
       icon: ShoppingCart,
       label: `My Basket (${cart?.items?.length || 0})`,
       onClick: () => {
-        console.log('Navigate to My Basket');
+        navigate('/cart');
         onClose();
       },
     },
@@ -45,7 +47,7 @@ const UserDropdown = ({ onClose }) => {
       icon: Package,
       label: 'My Orders',
       onClick: () => {
-        console.log('Navigate to My Orders');
+        navigate('/my-orders');
         onClose();
       },
     },
@@ -53,7 +55,7 @@ const UserDropdown = ({ onClose }) => {
       icon: Zap,
       label: 'My Smart Basket',
       onClick: () => {
-        console.log('Navigate to My Smart Basket');
+        navigate('/smart-basket');
         onClose();
       },
     },
@@ -61,7 +63,7 @@ const UserDropdown = ({ onClose }) => {
       icon: Wallet,
       label: 'My Wallet',
       onClick: () => {
-        console.log('Navigate to My Wallet');
+        navigate('/wallet');
         onClose();
       },
     },
@@ -69,7 +71,7 @@ const UserDropdown = ({ onClose }) => {
       icon: Phone,
       label: 'Contact Us',
       onClick: () => {
-        console.log('Navigate to Contact Us');
+        navigate('/customer-service');
         onClose();
       },
     },
