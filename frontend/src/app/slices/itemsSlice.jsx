@@ -2,40 +2,33 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { toast } from "react-toastify";
 import api from "../../services/api";
 
+
 export const fetchItems = createAsyncThunk(
   "items/fetchItems",
-  async ({ search, ...params } = {}, { rejectWithValue }) => {
+  async ({ page = 1, pageSize = 10, search, ...params } = {}, { rejectWithValue }) => {
     try {
-      let allItems = [];
-      let page = 1;
-      let hasNext = true;
+      const response = await api.get("/store/new-items/", {
+        params: {
+          ...params,
+          ...(search ? { search } : {}),
+          page,
+          page_size: pageSize,
+        },
+      });
 
-      while (hasNext) {
-        const response = await api.get("/store/new-items/", {
-          params: {
-            ...params,
-            ...(search ? { search } : {}),
-            page, 
-          },
-        });
+      const data = response.data;
 
-        const data = response.data;
-
-        allItems = [...allItems, ...data.results];
-
-        if (data.next) {
-          page += 1;
-        } else {
-          hasNext = false;
-        }
-      }
-
-      return allItems;
+      return {
+        results: data.results || [],
+        next: Boolean(data.next),
+        page,
+      };
     } catch (error) {
       return rejectWithValue(error.response?.data || error.message);
     }
   }
 );
+
 
 
 

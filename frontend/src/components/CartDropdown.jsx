@@ -34,7 +34,7 @@ const CartDropdown = ({ onClose }) => {
   };
 
   return (
-    <div className="absolute right-0 mt-2 w-96 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg shadow-lg p-4 z-50">
+    <div className="absolute right-0 mt-121 w-96 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg shadow-lg p-4 z-50">
       <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">My Basket</h3>
       <div className="max-h-64 overflow-y-auto">
     

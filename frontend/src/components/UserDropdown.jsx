@@ -1,8 +1,17 @@
 import React from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { User, ShoppingCart, Package, Zap, Wallet, Phone, LogOut } from 'lucide-react';
+import {
+  User,
+  ShoppingCart,
+  Package,
+  Zap,
+  Wallet,
+  Phone,
+  LogOut,
+} from 'lucide-react';
 import { logoutUser } from '../app/slices/authSlice';
 import { selectCart } from '../app/slices/CartSlice';
+import { motion } from 'framer-motion';
 
 const UserDropdown = ({ onClose }) => {
   const dispatch = useDispatch();
@@ -15,79 +24,76 @@ const UserDropdown = ({ onClose }) => {
   };
 
   // Placeholder data - these would come from actual API/state
-  const walletBalance = 250.00; // Placeholder
-  const ordersCount = 12; // Placeholder
-
   const menuItems = [
     {
       icon: User,
       label: 'My Account',
       onClick: () => {
-        // Navigate to account page
         console.log('Navigate to My Account');
         onClose();
-      }
+      },
     },
     {
       icon: ShoppingCart,
-      label: `My Basket (${cart?.items?.length || 0} items)`,
+      label: `My Basket (${cart?.items?.length || 0})`,
       onClick: () => {
-        // Navigate to basket/cart page
         console.log('Navigate to My Basket');
         onClose();
-      }
+      },
     },
     {
       icon: Package,
-      label: `My Orders `,
+      label: 'My Orders',
       onClick: () => {
-        // Navigate to orders page
         console.log('Navigate to My Orders');
         onClose();
-      }
+      },
     },
     {
       icon: Zap,
       label: 'My Smart Basket',
       onClick: () => {
-        // Navigate to smart basket page
         console.log('Navigate to My Smart Basket');
         onClose();
-      }
+      },
     },
     {
       icon: Wallet,
-      label: `My Wallet `,
+      label: 'My Wallet',
       onClick: () => {
-        // Navigate to wallet page
         console.log('Navigate to My Wallet');
         onClose();
-      }
+      },
     },
     {
       icon: Phone,
       label: 'Contact Us',
       onClick: () => {
-        // Navigate to contact page
         console.log('Navigate to Contact Us');
         onClose();
-      }
-    }
+      },
+    },
   ];
 
   return (
-    <div className="absolute right-0 mt-2 w-64 bg-white border border-gray-300 rounded-lg shadow-lg p-4 z-50">
+    <motion.div
+      initial={{ opacity: 0, y: -10, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: -10, scale: 0.95 }}
+      transition={{ duration: 0.25, ease: 'easeOut' }}
+      className="absolute right-0 mt-125 w-100 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 border border-gray-700 rounded-2xl shadow-2xl p-4 z-50 backdrop-blur-md"
+    >
       {/* User Info Header */}
-      <div className="pb-3 mb-3 border-b border-gray-200">
+      <div className="pb-3 mb-3 border-b border-gray-700">
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center">
-            <User className="w-5 h-5 text-emerald-600" />
+          <div className="w-12 h-12 bg-gradient-to-tr from-emerald-500 to-teal-400 rounded-full flex items-center justify-center shadow-md">
+            <User className="w-6 h-6 text-white" />
           </div>
           <div>
-            <p className="text-sm font-semibold text-gray-900">
+            <p className="text-sm font-semibold text-white">
               Hi, {user?.first_name || user?.email}
             </p>
-            <p className="text-xs text-gray-500">{user?.email}</p>
+            <p className="text-xs text-gray-300">{user?.email}</p>
           </div>
         </div>
       </div>
@@ -98,7 +104,7 @@ const UserDropdown = ({ onClose }) => {
           <button
             key={index}
             onClick={item.onClick}
-            className="w-full flex items-center space-x-3 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-emerald-600 rounded-md transition-colors duration-200"
+            className="w-full flex items-center space-x-3 px-3 py-2 text-sm text-gray-200 hover:bg-emerald-600/10 hover:text-emerald-400 rounded-lg transition-all duration-200"
           >
             <item.icon className="w-4 h-4" />
             <span>{item.label}</span>
@@ -106,17 +112,17 @@ const UserDropdown = ({ onClose }) => {
         ))}
 
         {/* Logout Button */}
-        <div className="pt-2 mt-2 border-t border-gray-200">
+        <div className="pt-2 mt-2 border-t border-gray-700">
           <button
             onClick={handleLogout}
-            className="w-full flex items-center space-x-3 px-3 py-2 text-sm text-red-600 hover:bg-red-50 hover:text-red-700 rounded-md transition-colors duration-200"
+            className="w-full flex items-center space-x-3 px-3 py-2 text-sm text-red-400 hover:bg-red-500/10 hover:text-red-500 rounded-lg transition-all duration-200"
           >
             <LogOut className="w-4 h-4" />
             <span>Logout</span>
           </button>
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 };
 
