@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import CardGrid from "../features/CardGrid";
 import RefinedByDropdowns from "../components/RefinedByDropdowns";
+import { NavigationBar } from "../components/NavigationBar";
 
 function HomePage() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -14,6 +15,9 @@ function HomePage() {
   };
 
   return (
+
+    <>
+    <NavigationBar/>
     <div className="flex">
       {/* Sidebar */}
       <aside className="hidden md:block w-64 p-4 h-screen overflow-y-auto sticky top-0 bg-white border rounded shadow-sm">
@@ -88,6 +92,8 @@ function HomePage() {
         <CardGrid />
       </main>
     </div>
+    </>
+
   );
 }
 

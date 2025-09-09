@@ -120,7 +120,7 @@ const ProductDetail = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
             <div>
               <div className="border rounded-lg overflow-hidden mb-4">
-                <img src={selectedImage || product.images?.[0] || ""} alt="Main product" className="w-full h-auto object-cover aspect-square" />
+                <img src={selectedImage || product.images?.[0] || "https://www.bbassets.com/media/uploads/p/m/10000102_20-fresho-cucumber.jpg?tr=w-154,q-80"} alt="Main product" className="w-full h-auto object-cover aspect-square" />
               </div>
               <div className="flex space-x-2">
                 {product.images?.map((img, i) => (
