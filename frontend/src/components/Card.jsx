@@ -1,5 +1,6 @@
 import React from 'react';
 import { useDispatch } from 'react-redux';
+import { Link } from 'react-router-dom';
 import { addItemToCart } from '../app/slices/CartSlice'; // Adjust this import path as needed
 
 const Card = ({ item }) => {
@@ -22,7 +23,9 @@ const Card = ({ item }) => {
   } = item;
   
   // Handler for the "Add to Cart" button click
-  const handleAddToCart = () => {
+  const handleAddToCart = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
     // Dispatch the action with the item's ID
     dispatch(addItemToCart(id));
   };
@@ -31,7 +34,8 @@ const Card = ({ item }) => {
   const imageUrl = image_urls?.[0] || 'https://images.pexels.com/photos/32333373/pexels-photo-32333373.jpeg';
 
   return (
-    <article className="group flex flex-col overflow-hidden rounded-2xl bg-white shadow-lg transition-all duration-300 ease-in-out hover:shadow-2xl hover:-translate-y-1">
+    <Link to={`/product/${id}`} className="block">
+      <article className="group flex flex-col overflow-hidden rounded-2xl bg-white shadow-lg transition-all duration-300 ease-in-out hover:shadow-2xl hover:-translate-y-1">
       {/* --- Image Section --- */}
       <div className="relative overflow-hidden">
         <img 
@@ -80,6 +84,7 @@ const Card = ({ item }) => {
         </div>
       </div>
     </article>
+    </Link>
   );
 };
 

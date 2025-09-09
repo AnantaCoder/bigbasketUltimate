@@ -206,6 +206,31 @@ class OrderSerializer(serializers.ModelSerializer):
         fields = ['id', 'status', 'buyer_email', 'total_amount', 'order_user', 'order_user_id', 'order_items', 'order_item_ids', 'created_at', 'updated_at']
         read_only_fields = ['id', 'created_at', 'updated_at', 'order_user', 'order_items']
         
+class RecursiveField(serializers.Serializer):
+    def to_representation(self, value):
+        serializer = self.parent.parent.__class__(value, context=self.context)
+        return serializer.data
+
+class CategorySerializer(serializers.ModelSerializer):
+    subcategories = RecursiveField(many=True, read_only=True)
+
+    class Meta:
+        model = Category
+        fields = [
+            "id",
+            "name",
+            "description",
+            "is_active",
+            "created_at",
+            "discount",
+            "image",
+            "referral_image",   # 🆕 added
+            "icon",
+            "color",
+            "popular_brands",
+            "parent",           # parent category
+            "subcategories",    # recursive children
+        ]
                 
 
 

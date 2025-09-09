@@ -1,10 +1,12 @@
 import React from 'react';
 import { useSelector, useDispatch } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import { Trash2, Plus, Minus } from 'lucide-react';
 import { removeItemFromCart, updateItemQuantity, selectCart } from '../app/slices/CartSlice';
 
 const CartDropdown = ({ onClose }) => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const cart = useSelector(selectCart);
 
   const handleRemoveItem = (itemId) => {
@@ -80,7 +82,10 @@ const CartDropdown = ({ onClose }) => {
         <span>₹{cart.total_price}</span>
       </div>
       <button
-        onClick={onClose}
+        onClick={() => {
+          onClose();
+          navigate('/checkout');
+        }}
         className="mt-4 w-full bg-emerald-600 hover:bg-emerald-700 text-white py-2 rounded-lg font-semibold transition"
       >
         Proceed to Checkout

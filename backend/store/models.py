@@ -13,7 +13,15 @@ class Category(models.Model):
     image = models.URLField(null=True,blank=True)
     icon= models.CharField(max_length=25,null=True,blank=True)
     color= models.CharField(max_length=25,null=True,blank=True)
+    referral_image = models.URLField(null=True, blank=True)
     popular_brands = models.JSONField(default=list,null=True,blank=True)
+    parent = models.ForeignKey(
+        "self",
+        on_delete=models.CASCADE,
+        related_name="subcategories",
+        null=True,
+        blank=True
+    )
     class Meta:
         verbose_name_plural = 'Categories'
     

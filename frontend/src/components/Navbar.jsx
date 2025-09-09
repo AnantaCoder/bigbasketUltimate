@@ -3,6 +3,7 @@ import logo from "../assets/logo.png";
 import LoginSignupModal from "../features/LoginSignup";
 import CartDropdown from "./CartDropdown";
 import CategoryDropdown from "./CategoryDropdown";
+import UserDropdown from "./UserDropdown";
 import { useSelector, useDispatch } from "react-redux";
 import { logoutUser } from "../app/slices/authSlice";
 import { fetchItems } from "../app/slices/itemsSlice";
@@ -76,17 +77,18 @@ function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
+  const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const dispatch = useDispatch();
   const [searchQuery,setSearchQuery] = useState("")
 
   const { user, isAuthenticated } = useSelector((state) => state.auth);
   const cart = useSelector(selectCart);
 
-  // Prevent body scroll on mobile menu or cart or category dropdown
+  // Prevent body scroll on mobile menu or cart or category dropdown or user dropdown
   useEffect(() => {
-    document.body.style.overflow = isMobileMenuOpen || isCartOpen || isCategoryOpen ? "hidden" : "auto";
+    document.body.style.overflow = isMobileMenuOpen || isCartOpen || isCategoryOpen || isUserDropdownOpen ? "hidden" : "auto";
     return () => { document.body.style.overflow = "auto"; };
-  }, [isMobileMenuOpen, isCartOpen, isCategoryOpen]);
+  }, [isMobileMenuOpen, isCartOpen, isCategoryOpen, isUserDropdownOpen]);
 
   const handleSearch = (e)=>{
     e.preventDefault();
@@ -103,6 +105,10 @@ function Navbar() {
 
   const toggleCategory = () => {
     setIsCategoryOpen(!isCategoryOpen);
+  };
+
+  const toggleUserDropdown = () => {
+    setIsUserDropdownOpen(!isUserDropdownOpen);
   };
 
   return (
@@ -165,16 +171,15 @@ function Navbar() {
                   </div>
                 </div>
               ) : (
-                <div className="hidden lg:flex items-center space-x-3">
-                  <span className="text-sm font-semibold text-gray-700">
-                    Hi, {user?.first_name || user?.email}
-                  </span>
+                <div className="hidden lg:flex items-center relative">
                   <button
-                    onClick={() => dispatch(logoutUser())}
-                    className="text-sm text-red-600 font-medium hover:underline"
+                    onClick={toggleUserDropdown}
+                  
+                    aria-label="User menu"
                   >
-                    Logout
+                    <UserIcon />
                   </button>
+                  {isUserDropdownOpen && <UserDropdown onClose={() => setIsUserDropdownOpen(false)} />}
                 </div>
               )}
               {showModal && (
@@ -235,10 +240,11 @@ function Navbar() {
           </button>
           {isCategoryOpen && <CategoryDropdown />}
           <div className="flex items-center space-x-8 text-sm font-semibold">
-            <a href="#" className="text-gray-600 hover:text-emerald-600 px-3 py-2 rounded-lg">OFFERS</a>
-            <a href="#" className="text-gray-600 hover:text-emerald-600 px-3 py-2 rounded-lg">bb SPECIALTY</a>
-            <a href="#" className="text-gray-600 hover:text-emerald-600 px-3 py-2 rounded-lg">bb MUNCHNUTS</a>
-            <a href="#" className="text-gray-600 hover:text-emerald-600 px-3 py-2 rounded-lg">GENIUS</a>
+            <a href="#" className="text-gray-600 hover:text-emerald-600 px-3 py-2 rounded-lg">Exotic Fruits and Vegetables</a>
+            <a href="#" className="text-gray-600 hover:text-emerald-600 px-3 py-2 rounded-lg">Tea</a>
+            <a href="#" className="text-gray-600 hover:text-emerald-600 px-3 py-2 rounded-lg">Ghee</a>
+            <a href="#" className="text-gray-600 hover:text-emerald-600 px-3 py-2 rounded-lg">Nandhini</a>
+            <a href="#" className="text-gray-600 hover:text-emerald-600 px-3 py-2 rounded-lg">Fresh Vegetables</a>
           </div>
         </div>
       </div>
@@ -267,7 +273,12 @@ function Navbar() {
               </div>
             ) : (
               <div className="flex flex-col space-y-3">
-                <span className="text-sm">Hi, {user?.first_name || user?.email}</span>
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center">
+                    <UserIcon />
+                  </div>
+                  <span className="text-sm font-semibold">Hi, {user?.first_name || user?.email}</span>
+                </div>
                 <button
                   onClick={() => {
                     dispatch(logoutUser());
@@ -294,10 +305,11 @@ function Navbar() {
             </button>
 
             <div className="flex flex-col space-y-4 pt-4 border-t">
-              <a href="#" className="hover:text-emerald-600">OFFERS</a>
-              <a href="#" className="hover:text-emerald-600">bb SPECIALTY</a>
-              <a href="#" className="hover:text-emerald-600">bb MUNCHNUTS</a>
-              <a href="#" className="hover:text-emerald-600">GENIUS</a>
+              <a href="#" className="hover:text-emerald-600">Exotic Fruits and Vegetables</a>
+              <a href="#" className="hover:text-emerald-600">Tea</a>
+              <a href="#" className="hover:text-emerald-600">Ghee</a>
+              <a href="#" className="hover:text-emerald-600">Nandhini</a>
+              <a href="#" className="hover:text-emerald-600">Fresh Vegetables</a>
             </div>
           </nav>
         </div>
