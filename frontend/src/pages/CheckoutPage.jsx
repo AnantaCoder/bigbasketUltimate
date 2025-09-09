@@ -17,6 +17,7 @@ function CheckoutPage() {
     ? cart.total_price
     : cart && cart.items
       ? cart.items.reduce((acc, item) => acc + item.price * (item.quantity || 1), 0)
+      : 0;
 
   // Assuming total savings is calculated as difference between some original price and current price
   // For now, setting to 0 or you can calculate if you have original prices
