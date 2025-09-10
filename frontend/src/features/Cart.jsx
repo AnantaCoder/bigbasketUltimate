@@ -3,6 +3,9 @@ import { useSelector, useDispatch } from 'react-redux';
 import {
   fetchCart,
   removeItemFromCart,
+  saveItemForLater,
+  moveToCartFromSaved,
+  removeFromSaved,
   selectCart,
   selectCartStatus
 } from '../app/slices/CartSlice';
@@ -11,6 +14,7 @@ const CartPage = () => {
   const dispatch = useDispatch();
   const cart = useSelector(selectCart);
   const status = useSelector(selectCartStatus);
+  const savedForLater = useSelector(state => state.cart.savedForLater);
   const footerRef = useRef(null);
 
   const [showStickyBar, setShowStickyBar] = useState(true);
@@ -38,6 +42,18 @@ const CartPage = () => {
     dispatch(removeItemFromCart(itemId));
   };
 
+  const handleSaveForLater = (itemId) => {
+    dispatch(saveItemForLater(itemId));
+  };
+
+  const handleMoveToCart = (itemId) => {
+    dispatch(moveToCartFromSaved(itemId));
+  };
+
+  const handleRemoveFromSaved = (itemId) => {
+    dispatch(removeFromSaved(itemId));
+  };
+
   const subtotal = cart?.items?.reduce(
     (sum, item) => sum + item.price * (item.quantity || 1),
     0
@@ -56,7 +72,7 @@ const CartPage = () => {
     );
   }
 
-  if (!cart || !cart.items || cart.items.length === 0) {
+  if ((!cart || !cart.items || cart.items.length === 0) && (!savedForLater || savedForLater.length === 0)) {
     return (
       <div className="flex h-screen flex-col items-center justify-center bg-white text-center p-4">
         <h1 className="text-3xl font-bold text-gray-800 mb-2">Your Cart is Empty</h1>
@@ -74,7 +90,7 @@ const CartPage = () => {
           <div className="text-lg font-semibold text-green-800">
             Delivery in <span className="font-bold">22 mins</span>
           </div>
-          <div className="font-semibold text-gray-700">{cart.items.length} Product(s)</div>
+          <div className="font-semibold text-gray-700">{cart?.items?.length || 0} Product(s)</div>
         </div>
 
         {/* Header row */}
@@ -85,7 +101,7 @@ const CartPage = () => {
         </div>
 
         {/* Cart Items */}
-        {cart.items.map((item) => {
+        {cart?.items?.map((item) => {
           const savedAmount = item.mrp - item.price;
           return (
             <div
@@ -112,7 +128,7 @@ const CartPage = () => {
                 </div>
                 <div className="flex gap-4 text-sm text-gray-600 mt-1 cursor-pointer">
                   <button onClick={() => handleRemoveItem(item.id)} className="hover:underline">Delete</button>
-                  <button className="hover:underline">Save for later</button>
+                  <button onClick={() => handleSaveForLater(item.id)} className="hover:underline">Save for later</button>
                 </div>
               </div>
 
@@ -125,6 +141,48 @@ const CartPage = () => {
             </div>
           );
         })}
+
+        {/* Saved For Later Section */}
+        {savedForLater && savedForLater.length > 0 && (
+          <>
+            <h2 className="text-2xl font-bold mt-12 mb-6 text-gray-900">Saved For Later</h2>
+            {savedForLater.map((item) => {
+              const savedAmount = item.mrp - item.price;
+              return (
+                <div
+                  key={item.id}
+                  className="border border-gray-300 rounded-md p-4 mb-4 bg-gray-50 flex items-center gap-6"
+                >
+                  <img
+                    src={item.image_urls?.[0] || 'https://via.placeholder.com/100'}
+                    alt={item.item_name}
+                    className="h-24 w-24 rounded-md object-cover"
+                  />
+
+                  <div className="flex-1">
+                    <div className="font-semibold text-gray-900">{item.item_name}</div>
+                    <div className="text-gray-500 line-through text-sm">{item.mrp ? `₹${item.mrp}` : ''}</div>
+                    <div className="font-bold text-gray-900 text-lg mt-1">₹{item.price}</div>
+                  </div>
+
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="flex gap-4 text-sm text-gray-600 mt-1 cursor-pointer">
+                      <button onClick={() => handleMoveToCart(item.id)} className="hover:underline">Move to Cart</button>
+                      <button onClick={() => handleRemoveFromSaved(item.id)} className="hover:underline">Remove</button>
+                    </div>
+                  </div>
+
+                  <div className="font-semibold text-gray-900 text-right">
+                    ₹{item.price * (item.quantity || 1)}
+                    {savedAmount > 0 && (
+                      <div className="text-green-700 font-semibold text-sm mt-1">Saved: ₹{savedAmount}</div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </>
+        )}
       </div>
 
       {/* Sticky Checkout Summary */}

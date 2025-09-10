@@ -4,6 +4,7 @@ import api from "../../services/api"; // Your configured axios instance
 
 const initialState = {
   cart: null,
+  savedForLater: [], // Added savedForLater items array
   status: "idle", // 'idle' | 'loading' | 'succeeded' | 'failed'
   error: null,
 };
@@ -175,9 +176,42 @@ const cartSlice = createSlice({
   reducers: {
     clearCart: (state) => {
       state.cart = null;
+      state.savedForLater = [];
       state.status = "idle";
       state.error = null;
     },
+    saveItemForLater: (state, action) => {
+      const itemId = action.payload;
+      if (state.cart && state.cart.items) {
+        const itemIndex = state.cart.items.findIndex(item => item.id === itemId);
+        if (itemIndex !== -1) {
+          const [item] = state.cart.items.splice(itemIndex, 1);
+          state.savedForLater.push(item);
+          // Update total price
+          state.cart.total_price = (parseFloat(state.cart.total_price) - parseFloat(item.price * (item.quantity || 1))).toFixed(2);
+        }
+      }
+    },
+    moveToCartFromSaved: (state, action) => {
+      const itemId = action.payload;
+      const savedIndex = state.savedForLater.findIndex(item => item.id === itemId);
+      if (savedIndex !== -1) {
+        const [item] = state.savedForLater.splice(savedIndex, 1);
+        if (state.cart && state.cart.items) {
+          state.cart.items.push(item);
+          state.cart.total_price = (parseFloat(state.cart.total_price) + parseFloat(item.price * (item.quantity || 1))).toFixed(2);
+        } else {
+          state.cart = {
+            items: [item],
+            total_price: (item.price * (item.quantity || 1)).toFixed(2),
+          };
+        }
+      }
+    },
+    removeFromSaved: (state, action) => {
+      const itemId = action.payload;
+      state.savedForLater = state.savedForLater.filter(item => item.id !== itemId);
+    }
   },
   extraReducers: (builder) => {
     builder

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
+import { useSearchParams } from "react-router-dom";
 import CardGrid from "../features/CardGrid";
 import RefinedByDropdowns from "../components/RefinedByDropdowns";
 import { NavigationBar } from "../components/NavigationBar";
@@ -8,6 +9,7 @@ import { fetchCategories } from "../app/slices/CategorySlice";
 function HomePage() {
   const dispatch = useDispatch();
   const { categories, loading: categoriesLoading } = useSelector((state) => state.categories);
+  const [searchParams, setSearchParams] = useSearchParams();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [selectedOption, setSelectedOption] = useState("Relevance");
   const [selectedCategoryId, setSelectedCategoryId] = useState(null);
@@ -18,6 +20,15 @@ function HomePage() {
     }
   }, [categories.length, categoriesLoading, dispatch]);
 
+  useEffect(() => {
+    const categoryParam = searchParams.get('category');
+    if (categoryParam) {
+      setSelectedCategoryId(parseInt(categoryParam, 10));
+    } else {
+      setSelectedCategoryId(null);
+    }
+  }, [searchParams]);
+
   const handleOptionClick = (option) => {
     setSelectedOption(option);
     setIsDropdownOpen(false);
@@ -27,10 +38,16 @@ function HomePage() {
 
   const handleCategoryClick = (categoryId) => {
     setSelectedCategoryId(categoryId);
+    if (categoryId) {
+      setSearchParams({ category: categoryId });
+    } else {
+      setSearchParams({});
+    }
   };
 
   const handleShowAll = () => {
     setSelectedCategoryId(null);
+    setSearchParams({});
   };
 
   return (

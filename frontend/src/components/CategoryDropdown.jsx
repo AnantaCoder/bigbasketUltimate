@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { fetchCategories } from '../app/slices/CategorySlice';
 
-const CategoryDropdown = () => {
+const CategoryDropdown = ({ onCategorySelect }) => {
   const dispatch = useDispatch();
   const { categories, loading, error } = useSelector((state) => state.categories);
   const [activeCategoryIndex, setActiveCategoryIndex] = useState(0);
@@ -50,6 +50,7 @@ const CategoryDropdown = () => {
               index === activeCategoryIndex ? 'bg-gray-700 font-bold' : ''
             }`}
             onMouseEnter={() => setActiveCategoryIndex(index)}
+            onClick={() => onCategorySelect && onCategorySelect(cat.id)}
           >
             {cat.name}
           </div>
@@ -61,11 +62,11 @@ const CategoryDropdown = () => {
         {activeCategory.subcategories && activeCategory.subcategories.length > 0 ? (
           activeCategory.subcategories.map((subcat) => (
             <div key={subcat.id} className="mb-3">
-              <h3 className="font-semibold mb-2">{subcat.name}</h3>
+              <h3 className="font-semibold mb-2 cursor-pointer hover:text-emerald-600" onClick={() => onCategorySelect && onCategorySelect(subcat.id)}>{subcat.name}</h3>
               {subcat.subcategories && subcat.subcategories.length > 0 && (
                 <ul className="list-disc list-inside text-gray-700">
                   {subcat.subcategories.map((subsubcat) => (
-                    <li key={subsubcat.id} className="mb-1 cursor-pointer hover:text-emerald-600">
+                    <li key={subsubcat.id} className="mb-1 cursor-pointer hover:text-emerald-600" onClick={() => onCategorySelect && onCategorySelect(subsubcat.id)}>
                       {subsubcat.name}
                     </li>
                   ))}

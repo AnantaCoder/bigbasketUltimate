@@ -20,9 +20,10 @@ const UserDropdown = ({ onClose }) => {
   const { user } = useSelector((state) => state.auth);
   const cart = useSelector(selectCart);
 
-  const handleLogout = () => {
-    dispatch(logoutUser());
+  const handleLogout = async () => {
+    await dispatch(logoutUser());
     onClose();
+    navigate('/'); // Redirect to login/signup page on logout
   };
 
   // Placeholder data - these would come from actual API/state

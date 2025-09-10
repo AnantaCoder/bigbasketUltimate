@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import logo from "../assets/logo.png";
 import LoginSignupModal from "../features/LoginSignup";
 import CartDropdown from "./CartDropdown";
@@ -74,6 +75,7 @@ const BasketIcon = () => (
 );
 
 function Navbar() {
+  const navigate = useNavigate();
   const [showModal, setShowModal] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
@@ -309,7 +311,12 @@ function Navbar() {
             <span className="mr-2">SHOP BY CATEGORY</span>
             <ChevronDownIcon className={`h-5 w-5 transition-transform duration-300 ${isCategoryOpen ? 'transform rotate-180' : ''}`} />
           </button>
-          {isCategoryOpen && <CategoryDropdown />}
+          {isCategoryOpen && <CategoryDropdown onCategorySelect={(categoryId) => {
+            // Close the dropdown
+            setIsCategoryOpen(false);
+            // Navigate to home page with category filter as query param
+            navigate(`/home?category=${categoryId}`);
+          }} />}
           <div className="flex items-center space-x-8 text-sm font-semibold">
             <a href="#" className="text-gray-600 hover:text-emerald-600 px-3 py-2 rounded-lg">Exotic Fruits and Vegetables</a>
             <a href="#" className="text-gray-600 hover:text-emerald-600 px-3 py-2 rounded-lg">Tea</a>
@@ -351,9 +358,10 @@ function Navbar() {
                   <span className="text-sm font-semibold">Hi, {user?.first_name || user?.email}</span>
                 </div>
                 <button
-                  onClick={() => {
-                    dispatch(logoutUser());
+                  onClick={async () => {
+                    await dispatch(logoutUser());
                     setIsMobileMenuOpen(false);
+                    navigate('/'); // Redirect to login/signup page on logout
                   }}
                   className="text-red-600 font-medium hover:underline text-left"
                 >

@@ -16,11 +16,11 @@ from .serializers import ItemSerializer
 from rest_framework.filters import SearchFilter
 from django_filters.rest_framework import DjangoFilterBackend
 class CategoryListAPIView(APIView):
-    
+
     permission_classes = [permissions.AllowAny]
-    
+
     def get(self,request,format=None):
-        categories = Category.objects.filter(is_active=True)
+        categories = Category.objects.filter(is_active=True, parent=None)
         serializer = CategorySerializer(categories , many=True)
         return response.Response(serializer.data)
     
