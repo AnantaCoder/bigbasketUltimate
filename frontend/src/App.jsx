@@ -17,6 +17,7 @@ import SmartBasket from "./pages/SmartBasket";
 import ShoppingList from "./pages/ShoppingList";
 import Addresses from "./pages/Addresses";
 import SavedPayments from "./pages/SavedPayments";
+import SellerAuthPage from "./pages/SellerLoginPage";
 
 function App() {
   return (
@@ -42,6 +43,9 @@ function App() {
           <Route path="/addresses" element={<Addresses />} />
           <Route path="/saved-payments" element={<SavedPayments />} />
         </Route>
+
+          <Route path="/seller" element={<SellerAuthPage />} />
+        
       </Routes>
     </BrowserRouter>
   );

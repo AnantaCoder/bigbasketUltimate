@@ -182,7 +182,7 @@ function LandingPage() {
       </section>
 
       {/* Groceries & Essentials Section */}
-      <section className="px-8 py-6">
+      <section className="px-4 py-4">
         <h2 className="text-xl font-bold mb-4"></h2>
 
         <h3 className="text-lg font-semibold mb-2">Beverages</h3>
@@ -197,7 +197,7 @@ function LandingPage() {
           ].map((item, i) => (
             <button
               key={i}
-              className="bg-white rounded-lg shadow p-4 flex flex-col items-center hover:shadow-lg transition"
+              className="bg-white rounded-lg shadow  flex flex-col items-center hover:shadow-lg transition scale-120"
               style={{ borderRadius: "12px" }}
             >
               {item.image ? (
@@ -218,14 +218,14 @@ function LandingPage() {
         <h3 className="text-lg font-semibold mb-2">Snacks Store</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6">
           {[
-            { image: "https://www.bigbasket.com/media/customPage/b01eee88-e6bc-410e-993c-dedd012cf04b/91e53046-98e0-4c5b-ae53-7d073e5210e1/09ece9f7-7ac9-4d1e-afbb-f8ac572add38/hp_sbf_m_biscuits-&-namkeens_480_250923.jpg?tr=w-480,q-80" },
+            { image: "https://www.bigbasket.com/media/customPage/b01eee88-e6bc-410e-993c-dedd012cf04b/91e53046-98e0-4c5b-ae53-7d073e5210e1/09ece9f7-7ac9-4d1e-afbb-f8ac572add38/hp_sbf_m_biscuits-&-namkeens_480_250923.jpg?tr=w-500,q-100" },
             { image: "https://www.bigbasket.com/media/customPage/b01eee88-e6bc-410e-993c-dedd012cf04b/91e53046-98e0-4c5b-ae53-7d073e5210e1/09ece9f7-7ac9-4d1e-afbb-f8ac572add38/hp_sbf_m_breakfast-cereals_480_250923.jpg?tr=w-480,q-80" },
             { image: "https://www.bigbasket.com/media/customPage/b01eee88-e6bc-410e-993c-dedd012cf04b/91e53046-98e0-4c5b-ae53-7d073e5210e1/09ece9f7-7ac9-4d1e-afbb-f8ac572add38/hp_sbf_m_pasta-sauces-&-more_480_270723.jpg?tr=w-480,q-80" },
             { image: "https://www.bigbasket.com/media/customPage/b01eee88-e6bc-410e-993c-dedd012cf04b/91e53046-98e0-4c5b-ae53-7d073e5210e1/09ece9f7-7ac9-4d1e-afbb-f8ac572add38/hp_sbf_m_sweet-cravings_480_250923.jpg?tr=w-480,q-80" },
           ].map((item, i) => (
             <button
               key={i}
-              className="bg-white rounded-lg shadow p-4 flex flex-col items-center hover:shadow-lg transition"
+              className="bg-white rounded-lg shadow p-1  flex flex-col items-center hover:shadow-lg transition"
               style={{ borderRadius: "12px" }}
             >
               {item.image ? (

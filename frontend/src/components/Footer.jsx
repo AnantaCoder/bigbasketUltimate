@@ -10,7 +10,7 @@ const SocialIcon = ({ children, href }) => (
 
 const FooterLink = ({ href, children }) => (
   <li className="mb-2">
-    <a href={href} className="text-gray-400 hover:text-green-400 transition-colors duration-300 text-sm">
+    <a href={href} className="text-gray-100 hover:text-green-400 transition-colors duration-300 text-sm">
       {children}
     </a>
   </li>
@@ -25,7 +25,7 @@ const AppStoreButton = ({ platform, href, imgSrc }) => (
 
 const Footer = () => {
   return (
-    <footer className="bg-gray-800 text-white font-sans">
+    <footer className="bg-black text-white font-sans">
       <div className="container mx-auto px-6 py-12">
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-8">
           
@@ -103,9 +103,9 @@ const Footer = () => {
           </div>
         </div>
       </div>
-      <div className="bg-gray-900 py-6">
+      <div className="bg-black py-6">
         <div className="container mx-auto px-6 flex flex-col md:flex-row justify-between items-center text-center md:text-left">
-          <p className="text-gray-500 text-sm mb-4 md:mb-0">
+          <p className="text-gray-100 text-sm mb-4 md:mb-0">
             Copyright &copy; 2023-2025, YourCompany Pvt. Ltd.
           </p>
           <div className="flex items-center space-x-2">
@@ -122,5 +122,5 @@ const Footer = () => {
 export default Footer
 
 
-// To use this component in your app, you would render it like this:
+
 
