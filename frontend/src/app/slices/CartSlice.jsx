@@ -271,7 +271,7 @@ const cartSlice = createSlice({
   },
 });
 
-export const { clearCart } = cartSlice.actions;
+export const { clearCart, saveItemForLater, moveToCartFromSaved, removeFromSaved } = cartSlice.actions;
 
 // Selectors
 export const selectCart = (state) => state.cart.cart;
