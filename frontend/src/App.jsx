@@ -18,6 +18,7 @@ import ShoppingList from "./pages/ShoppingList";
 import Addresses from "./pages/Addresses";
 import SavedPayments from "./pages/SavedPayments";
 import SellerAuthPage from "./pages/SellerLoginPage";
+import ManageItems from "./pages/ManageItems";
 
 function App() {
   return (
@@ -29,6 +30,7 @@ function App() {
           <Route path="/product/:id" element={<ProductDetail />} />
           <Route path="/checkout" element={<CheckoutPage />} />
           <Route path="/seller/add-items" element={<AddItems />} />
+          <Route path="/seller/manage-items" element={<ManageItems />} />
           <Route path="/cart" element={<CartPage />} />
 
           {/* Orders */}

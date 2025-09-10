@@ -157,6 +157,17 @@ export const updateItemQuantity = createAsyncThunk(
   }
 );
 
+// Update quantity in cart
+export const updateQuantityInCart = createAsyncThunk(
+  'cart/updateQuantity',
+  async ({ itemId, quantity }) => {
+    const response = await api.updateQuantity(itemId, quantity);
+    return response.data;
+  }
+);
+
+
+
 // ## Cart Slice Definition
 const cartSlice = createSlice({
   name: "cart",
@@ -213,6 +224,14 @@ const cartSlice = createSlice({
         state.cart = action.payload;
       })
       .addCase(updateItemQuantity.rejected, (state, action) => {
+        state.error = action.payload;
+      })
+
+      // Update Quantity in Cart
+      .addCase(updateQuantityInCart.fulfilled, (state, action) => {
+        state.cart = action.payload;
+      })
+      .addCase(updateQuantityInCart.rejected, (state, action) => {
         state.error = action.payload;
       });
   },

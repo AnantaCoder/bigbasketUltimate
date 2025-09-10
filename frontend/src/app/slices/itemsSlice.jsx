@@ -116,12 +116,18 @@ export const createItem = createAsyncThunk(
 
 export const updateItem = createAsyncThunk(
   "items/updateItem",
-  async ({ id, data }, { rejectWithValue }) => {
+  async (itemData, { rejectWithValue }) => {
     const toastId = toast.loading("Updating item ..", { autoClose: false });
+
     try {
+      const { id, ...data } = itemData;
+
       const response = await api.put(`/store/items/${id}/`, data);
       toast.update(toastId, {
-        render: "item updated",
+        render: "Item updated ✅",
+        type: "success",
+        isLoading: false,
+        autoClose: 3000,
       });
       return response.data;
     } catch (error) {
@@ -129,7 +135,10 @@ export const updateItem = createAsyncThunk(
         render:
           error.response?.data.error ||
           error.response?.data.detail ||
-          "failed to update item",
+          "Failed to update item ❌",
+        type: "error",
+        isLoading: false,
+        autoClose: 3000,
       });
       return rejectWithValue(error.response?.data || error.message);
     }
