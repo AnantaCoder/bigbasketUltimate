@@ -5,12 +5,13 @@ import api from "../../services/api";
 
 export const fetchItems = createAsyncThunk(
   "items/fetchItems",
-  async ({ page = 1, pageSize = 10, search, ...params } = {}, { rejectWithValue }) => {
+  async ({ page = 1, pageSize = 10, search, category, ...params } = {}, { rejectWithValue }) => {
     try {
       const response = await api.get("/store/new-items/", {
         params: {
           ...params,
           ...(search ? { search } : {}),
+          ...(category ? { category } : {}),
           page,
           page_size: pageSize,
         },

@@ -1,17 +1,36 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useSelector, useDispatch } from "react-redux";
 import CardGrid from "../features/CardGrid";
 import RefinedByDropdowns from "../components/RefinedByDropdowns";
 import { NavigationBar } from "../components/NavigationBar";
+import { fetchCategories } from "../app/slices/CategorySlice";
 
 function HomePage() {
+  const dispatch = useDispatch();
+  const { categories, loading: categoriesLoading } = useSelector((state) => state.categories);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [selectedOption, setSelectedOption] = useState("Relevance");
+  const [selectedCategoryId, setSelectedCategoryId] = useState(null);
+
+  useEffect(() => {
+    if (categories.length === 0 && !categoriesLoading) {
+      dispatch(fetchCategories({ page: 1, pageSize: 50 }));
+    }
+  }, [categories.length, categoriesLoading, dispatch]);
 
   const handleOptionClick = (option) => {
     setSelectedOption(option);
     setIsDropdownOpen(false);
     console.log(`Selected sorting option: ${option}`);
     // Here you can add logic to handle the sorting/filtering
+  };
+
+  const handleCategoryClick = (categoryId) => {
+    setSelectedCategoryId(categoryId);
+  };
+
+  const handleShowAll = () => {
+    setSelectedCategoryId(null);
   };
 
   return (
@@ -23,13 +42,25 @@ function HomePage() {
       <aside className="hidden md:block w-64 p-4 h-screen overflow-y-auto sticky top-0 bg-white border rounded shadow-sm">
         <h3 className="text-lg font-semibold mb-4">Shop by Category</h3>
         <ul className="space-y-2 text-gray-700 border-l border-gray-300 pl-4">
-          <li className="font-bold text-green-600">Fruits & Vegetables</li>
-          <li>Cuts & Sprouts</li>
-          <li>Exotic Fruits & Veggies</li>
-          <li>Flower Bouquets, Bunches</li>
-          <li>Fresh Fruits</li>
-          <li>Fresh Vegetables</li>
-          <li className="text-blue-600 cursor-pointer underline">Show more +</li>
+          <li
+            className={`cursor-pointer hover:text-emerald-600 ${selectedCategoryId === null ? 'font-bold text-green-600' : ''}`}
+            onClick={handleShowAll}
+          >
+            All Categories
+          </li>
+          {categoriesLoading ? (
+            <li>Loading categories...</li>
+          ) : (
+            categories.map((category) => (
+              <li
+                key={category.id}
+                className={`cursor-pointer hover:text-emerald-600 ${selectedCategoryId === category.id ? 'font-bold text-green-600' : ''}`}
+                onClick={() => handleCategoryClick(category.id)}
+              >
+                {category.name}
+              </li>
+            ))
+          )}
         </ul>
 
         {/* Refined by Section */}
@@ -89,7 +120,7 @@ function HomePage() {
         </div>
 
         {/* Product Grid */}
-        <CardGrid />
+        <CardGrid categoryId={selectedCategoryId} />
       </main>
     </div>
     </>

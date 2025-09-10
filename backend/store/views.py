@@ -47,13 +47,14 @@ class ItemListCreateAPIView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class ItemViewSet(viewsets.ModelViewSet):
-    
+
     permission_classes=[permissions.AllowAny]
     queryset = Item.objects.all()
     serializer_class = ItemSerializer
-    
-    parser_classes = [MultiPartParser, FormParser , JSONParser]  
+
+    parser_classes = [MultiPartParser, FormParser , JSONParser]
     filter_backends=[DjangoFilterBackend,SearchFilter]
+    filterset_fields = ['category']
     search_fields=["item_name","description","manufacturer"]
 
     def perform_create(self, serializer):

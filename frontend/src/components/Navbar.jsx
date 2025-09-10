@@ -8,6 +8,7 @@ import { useSelector, useDispatch } from "react-redux";
 import { logoutUser } from "../app/slices/authSlice";
 import { fetchItems } from "../app/slices/itemsSlice";
 import { selectCart } from "../app/slices/CartSlice";
+import axios from "axios";
 
 // --- ICONS ---
 const MenuIcon = () => (
@@ -79,7 +80,8 @@ function Navbar() {
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const [isLocationSearchOpen, setIsLocationSearchOpen] = useState(false);
-  const [locationQuery, setLocationQuery] = useState("");
+  const [locationQuery, setLocationQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
   const [selectedLocation, setSelectedLocation] = useState("560004, Bangalore");
   const dispatch = useDispatch();
   const [searchQuery,setSearchQuery] = useState("")
@@ -97,10 +99,35 @@ function Navbar() {
     e.preventDefault();
     if(searchQuery.trim()){
       dispatch(fetchItems({
-        search:searchQuery
+        search:searchQuery,
+        category: null // Reset category filter when searching
       }))
     }
   }
+  const handleLocationSearch = async (e) => {
+    const query = e.target.value;
+    setLocationQuery(query);
+
+    if (query.length > 2) {
+      try {
+        const res = await axios.get(`/api/search-address/?q=${query}`);
+        setSearchResults(res.data.results || []);
+      } catch (err) {
+        console.error("Error fetching locations:", err);
+      }
+    } else {
+      setSearchResults([]);
+    }
+  };
+
+  // 🔹 Select location
+  const handleSelectLocation = (loc) => {
+    setSelectedLocation(`${loc.pincode}, ${loc.name}`);
+    setIsLocationSearchOpen(false);
+    setLocationQuery("");
+    setSearchResults([]);
+
+  };
 
   const toggleCart = () => {
     setIsCartOpen(!isCartOpen);
@@ -150,16 +177,57 @@ function Navbar() {
             {/* Right Side */}
             <div className="flex items-center space-x-4 md:space-x-8 relative">
               {/* Location */}
-              <div className="hidden lg:flex items-center group cursor-pointer">
+              <div
+                className="hidden lg:flex items-center group cursor-pointer"
+                onClick={() => setIsLocationSearchOpen(true)}
+              >
                 <LocationPinIcon />
                 <div className="text-sm">
                   <div className="font-bold text-gray-800 group-hover:text-emerald-600 transition-colors">
-                    560004
+                    560004, Bangalore
                   </div>
-                  <div className="text-gray-600 text-xs">Bangalore</div>
                 </div>
                 <ChevronDownIcon className="h-4 w-4 ml-2 text-gray-500 group-hover:text-emerald-600 transition-colors" />
               </div>
+              {isLocationSearchOpen && (
+                <div className="fixed inset-0 z-50 flex items-start justify-center pt-20">
+                  <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-6 relative z-50">
+                    <button
+                      onClick={() => setIsLocationSearchOpen(false)}
+                      className="absolute top-3 right-3"
+                      aria-label="Close location search"
+                    >
+                      <CloseIcon />
+                    </button>
+                    <h2 className="text-lg font-bold mb-4">Select a location for delivery</h2>
+                    <p className="mb-4 text-gray-700">
+                      Choose your address location to see product availability and delivery options
+                    </p>
+                    <input
+                      type="text"
+                      placeholder="Search for area or street name"
+                      value={locationQuery}
+                      onChange={handleLocationSearch}
+                      className="w-full border border-gray-300 rounded-md px-4 py-2 mb-4 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    />
+                    <ul className="max-h-60 overflow-y-auto">
+                      {searchResults.length === 0 && locationQuery.length > 2 && (
+                        <li className="text-gray-500">No results found</li>
+                      )}
+                      {searchResults.map((loc) => (
+                        <li
+                          key={loc.id}
+                          className="cursor-pointer px-3 py-2 hover:bg-gray-100 rounded"
+                          onClick={() => handleSelectLocation(loc)}
+                        >
+                          {loc.pincode}, {loc.name}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                <div className="fixed inset-0 backdrop-blur-md bg-transparent" onClick={() => setIsLocationSearchOpen(false)}></div>
+              </div>
+              )}
 
               {/* Auth Section */}
               {!isAuthenticated ? (

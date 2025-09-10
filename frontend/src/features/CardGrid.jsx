@@ -33,7 +33,7 @@ const SkeletonGrid = ({ count = PAGE_SIZE }) => (
   </div>
 );
 
-const CardGrid = () => {
+const CardGrid = ({ categoryId = null }) => {
   const dispatch = useDispatch();
   const [items, setItems] = useState([]);
   const [page, setPage] = useState(1);
@@ -55,7 +55,7 @@ const CardGrid = () => {
           setLoadingMore(true);
         }
 
-        const res = await dispatch(fetchItems({ page: nextPage, pageSize: PAGE_SIZE })).unwrap();
+        const res = await dispatch(fetchItems({ page: nextPage, pageSize: PAGE_SIZE, category: categoryId })).unwrap();
 
         if (nextPage === 1) {
           setItems(res.results || []);
@@ -72,12 +72,20 @@ const CardGrid = () => {
         setLoadingMore(false);
       }
     },
-    [dispatch]
+    [dispatch, categoryId]
   );
 
   useEffect(() => {
     loadPage(1);
   }, [loadPage]);
+
+  // Reset items when category changes
+  useEffect(() => {
+    setItems([]);
+    setPage(1);
+    setHasNext(true);
+    loadPage(1);
+  }, [categoryId]);
 
   useEffect(() => {
     if (!sentinelRef.current) return;
