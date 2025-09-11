@@ -90,6 +90,7 @@ function Navbar() {
 
   const { user, isAuthenticated } = useSelector((state) => state.auth);
   const cart = useSelector(selectCart);
+  const { categories } = useSelector((state) => state.categories);
 
   // Prevent body scroll on mobile menu or cart or category dropdown or user dropdown or location search
   useEffect(() => {
@@ -100,10 +101,7 @@ function Navbar() {
   const handleSearch = (e)=>{
     e.preventDefault();
     if(searchQuery.trim()){
-      dispatch(fetchItems({
-        search:searchQuery,
-        category: null // Reset category filter when searching
-      }))
+      navigate(`/home?search=${encodeURIComponent(searchQuery)}`);
     }
   }
   const handleLocationSearch = async (e) => {
@@ -131,6 +129,15 @@ function Navbar() {
 
   };
 
+  // Handle category button clicks
+  const handleCategoryClick = (categoryName) => {
+    navigate(`/home?search=${categoryName}`);
+  };
+
+  const handleNandiniClick = () => {
+    navigate(`/home?search=nandini`);
+  };
+
   const toggleCart = () => {
     setIsCartOpen(!isCartOpen);
   };
@@ -150,7 +157,7 @@ function Navbar() {
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between py-4">
             {/* Logo */}
-            <div className="flex items-center">
+            <div className="flex items-center cursor-pointer" onClick={() => navigate('/')}>
               <img src={logo} alt="Logo" className="h-10 w-auto scale-220" />
             </div>
 
@@ -271,15 +278,15 @@ function Navbar() {
                     My Basket
                   </div>
                   <div className="text-gray-500 text-xs">
-                    {cart?.items?.length || 0} Items • ₹{cart?.total_price || 0}
+                    {cart?.cart_items?.length || 0} Items • ₹{cart?.total_price || 0}
                   </div>
                 </div>
                 <span className="absolute -top-2 -right-2 bg-gradient-to-r from-red-500 to-red-600 text-white text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center shadow-md">
-                  {cart?.items?.length || 0}
+                  {cart?.cart_items?.length || 0}
                 </span>
               </div>
 
-              {/* {isCartOpen && <CartDropdown onClose={() => setIsCartOpen(false)} />} */}
+              {isCartOpen && <CartDropdown onClose={() => setIsCartOpen(false)} />}
 
               {/* Shop by Category */}
               {/* Removed the Shop by Category button on the right side beside My Basket as per user request */}
@@ -318,11 +325,11 @@ function Navbar() {
             navigate(`/home?category=${categoryId}`);
           }} />}
           <div className="flex items-center space-x-8 text-sm font-semibold">
-            <a href="#" className="text-gray-600 hover:text-emerald-600 px-3 py-2 rounded-lg">Exotic Fruits and Vegetables</a>
-            <a href="#" className="text-gray-600 hover:text-emerald-600 px-3 py-2 rounded-lg">Tea</a>
-            <a href="#" className="text-gray-600 hover:text-emerald-600 px-3 py-2 rounded-lg">Ghee</a>
-            <a href="#" className="text-gray-600 hover:text-emerald-600 px-3 py-2 rounded-lg">Nandhini</a>
-            <a href="#" className="text-gray-600 hover:text-emerald-600 px-3 py-2 rounded-lg">Fresh Vegetables</a>
+            <button onClick={() => handleCategoryClick("exotic fruits and vegetables")} className="text-gray-600 hover:text-emerald-600 px-3 py-2 rounded-lg">Exotic Fruits and Vegetables</button>
+            <button onClick={() => handleCategoryClick("tea")} className="text-gray-600 hover:text-emerald-600 px-3 py-2 rounded-lg">Tea</button>
+            <button onClick={() => handleCategoryClick("ghee")} className="text-gray-600 hover:text-emerald-600 px-3 py-2 rounded-lg">Ghee</button>
+            <button onClick={handleNandiniClick} className="text-gray-600 hover:text-emerald-600 px-3 py-2 rounded-lg">Nandini</button>
+            <button onClick={() => handleCategoryClick("Vegetables")} className="text-gray-600 hover:text-emerald-600 px-3 py-2 rounded-lg">Fresh Vegetables</button>
           </div>
         </div>
       </div>
@@ -330,9 +337,9 @@ function Navbar() {
       {/* Mobile Menu */}
       <div className={`fixed inset-0 z-50 transform transition-transform duration-300 ease-in-out lg:hidden ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"}`}>
         <div className="absolute inset-0 bg-black/40" onClick={() => setIsMobileMenuOpen(false)}></div>
-        <div className="relative w-4/5 max-w-xs h-full bg-white shadow-xl p-6">
+          <div className="relative w-4/5 max-w-xs h-full bg-white shadow-xl p-6">
           <div className="flex items-center justify-between mb-8">
-            <img src={logo} alt="Logo" className="h-8 w-auto" />
+            <img src={logo} alt="Logo" className="h-8 w-auto cursor-pointer" onClick={() => { setIsMobileMenuOpen(false); navigate('/'); }} />
             <button onClick={() => setIsMobileMenuOpen(false)} className="p-1">
               <CloseIcon />
             </button>
@@ -384,11 +391,11 @@ function Navbar() {
             </button>
 
             <div className="flex flex-col space-y-4 pt-4 border-t">
-              <a href="#" className="hover:text-emerald-600">Exotic Fruits and Vegetables</a>
-              <a href="#" className="hover:text-emerald-600">Tea</a>
-              <a href="#" className="hover:text-emerald-600">Ghee</a>
-              <a href="#" className="hover:text-emerald-600">Nandhini</a>
-              <a href="#" className="hover:text-emerald-600">Fresh Vegetables</a>
+              <button onClick={() => { handleCategoryClick("exotic fruits and vegetables"); setIsMobileMenuOpen(false); }} className="hover:text-emerald-600 text-left">Exotic Fruits and Vegetables</button>
+              <button onClick={() => { handleCategoryClick("tea"); setIsMobileMenuOpen(false); }} className="hover:text-emerald-600 text-left">Tea</button>
+              <button onClick={() => { handleCategoryClick("ghee"); setIsMobileMenuOpen(false); }} className="hover:text-emerald-600 text-left">Ghee</button>
+              <button onClick={() => { handleNandiniClick(); setIsMobileMenuOpen(false); }} className="hover:text-emerald-600 text-left">Nandini</button>
+              <button onClick={() => { handleCategoryClick("fresh Vegetables"); setIsMobileMenuOpen(false); }} className="hover:text-emerald-600 text-left">Fresh Vegetables</button>
             </div>
           </nav>
         </div>

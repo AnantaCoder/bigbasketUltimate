@@ -36,6 +36,7 @@ const CardGrid = ({
   categoryId = null,
   filters = {},
   sortBy = "relevance",
+  search = null,
 }) => {
   const dispatch = useDispatch();
   const [items, setItems] = useState([]);
@@ -64,6 +65,7 @@ const CardGrid = ({
           pageSize: PAGE_SIZE,
           category: categoryId,
           sort: sortBy,
+          search: search,
           ...filters,
         };
 
@@ -103,20 +105,20 @@ const CardGrid = ({
         setLoadingMore(false);
       }
     },
-    [dispatch, categoryId, JSON.stringify(filters), sortBy]
+    [dispatch, categoryId, JSON.stringify(filters), sortBy, search]
   );
 
   useEffect(() => {
     loadPage(1);
   }, [loadPage]);
 
-  // Reset items when category, filters, or sortBy changes
+  // Reset items when category, filters, sortBy, or search changes
   useEffect(() => {
     setItems([]);
     setPage(1);
     setHasNext(true);
     loadPage(1);
-  }, [categoryId, JSON.stringify(filters), sortBy]);
+  }, [categoryId, JSON.stringify(filters), sortBy, search]);
 
   useEffect(() => {
     if (!sentinelRef.current) return;

@@ -19,6 +19,7 @@ function HomePage() {
   const [showAllCategories, setShowAllCategories] = useState(false);
   const [filters, setFilters] = useState({});
   const [sortBy, setSortBy] = useState("relevance");
+  const [searchQuery, setSearchQuery] = useState(null);
 
   // Fetch categories on load
   useEffect(() => {
@@ -27,11 +28,14 @@ function HomePage() {
     }
   }, [categories.length, categoriesLoading, dispatch]);
 
-  // Sync category from query params
+  // Sync category and search from query params
   useEffect(() => {
     const categoryParam = searchParams.get("category");
+    const searchParam = searchParams.get("search");
     setSelectedCategoryId(categoryParam ? parseInt(categoryParam, 10) : null);
+    setSearchQuery(searchParam || null);
   }, [searchParams]);
+
 
 
 
@@ -252,6 +256,8 @@ function HomePage() {
                       categories.find((c) => c.id === selectedCategoryId)
                         ?.name || "Category"
                     }"`
+                  : searchQuery
+                  ? `Search results for "${searchQuery}"`
                   : "All Products"}
               </h1>
               <p className="text-sm text-gray-500 mt-1">
@@ -308,6 +314,7 @@ function HomePage() {
             categoryId={selectedCategoryId}
             filters={filters}
             sortBy={sortBy}
+            search={searchQuery}
           />
         </main>
       </div>
