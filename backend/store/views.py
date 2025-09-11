@@ -1,7 +1,14 @@
 from django.shortcuts import render
 from accounts.models import User, Seller
 from store.models import Item, Category, Cart, OrderUser, OrderItem, Order
-from store.serializers import ItemSerializer, CategorySerializer, CartSerializer, OrderUserSerializer, OrderItemSerializer, OrderSerializer
+from store.serializers import (
+    ItemSerializer,
+    CategorySerializer,
+    CartSerializer,
+    OrderUserSerializer,
+    OrderItemSerializer,
+    OrderSerializer,
+)
 from rest_framework.views import APIView
 from rest_framework import status, response, permissions, serializers
 from rest_framework.response import Response
@@ -10,29 +17,31 @@ from store.permissions import IsSellerOrReadOnly
 from django.http import Http404
 from rest_framework import generics
 from rest_framework import viewsets, permissions
-from rest_framework.parsers import MultiPartParser, FormParser , JSONParser
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from .models import Item
 from .serializers import ItemSerializer
 from rest_framework.filters import SearchFilter
 from django_filters.rest_framework import DjangoFilterBackend
+
+
 class CategoryListAPIView(APIView):
 
     permission_classes = [permissions.AllowAny]
 
-    def get(self,request,format=None):
+    def get(self, request, format=None):
         categories = Category.objects.filter(is_active=True, parent=None)
-        serializer = CategorySerializer(categories , many=True)
+        serializer = CategorySerializer(categories, many=True)
         return response.Response(serializer.data)
-    
-    
-# views for single category will be there as well 
+
+
+# views for single category will be there as well
 class ItemListCreateAPIView(APIView):
     permission_classes = [permissions.AllowAny]
-    parser_classes = [MultiPartParser, FormParser , JSONParser]  
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
 
     def get(self, request, format=None):
         user = self.request.user
-        if user.is_authenticated and hasattr(user, 'seller'):
+        if user.is_authenticated and hasattr(user, "seller"):
             items = Item.objects.filter(seller=user.seller)
         else:
             items = Item.objects.all()
@@ -46,23 +55,73 @@ class ItemListCreateAPIView(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+
 class ItemViewSet(viewsets.ModelViewSet):
 
-    permission_classes=[permissions.AllowAny]
+    permission_classes = [permissions.AllowAny]
     queryset = Item.objects.all()
     serializer_class = ItemSerializer
 
-    parser_classes = [MultiPartParser, FormParser , JSONParser]
-    filter_backends=[DjangoFilterBackend,SearchFilter]
-    filterset_fields = ['category']
-    search_fields=["item_name","description","manufacturer"]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
+    filter_backends = [DjangoFilterBackend, SearchFilter]
+    filterset_fields = ["category", "manufacturer", "item_type", "price", "is_active"]
+    search_fields = ["item_name", "description", "manufacturer"]
 
     def perform_create(self, serializer):
         seller = self.request.user.seller
         serializer.save()
 
+    def get_queryset(self):
+        queryset = super().get_queryset()
+
+        # Filter by seller if provided
+        seller_id = self.request.query_params.get("seller")
+        if seller_id:
+            queryset = queryset.filter(seller__user__id=seller_id)
+
+        # Price range filtering
+        min_price = self.request.query_params.get("price__gte")
+        max_price = self.request.query_params.get("price__lte")
+
+        if min_price:
+            queryset = queryset.filter(price__gte=min_price)
+        if max_price:
+            queryset = queryset.filter(price__lte=max_price)
+
+        # Sorting
+        sort_param = self.request.query_params.get("sort")
+        if sort_param:
+            if sort_param == "price_asc":
+                queryset = queryset.order_by("price")
+            elif sort_param == "price_desc":
+                queryset = queryset.order_by("-price")
+            elif sort_param == "saving_desc":
+                # Assuming there's a discount field or we calculate savings
+                queryset = queryset.order_by(
+                    "-price"
+                )  # Placeholder - adjust based on your model
+            elif sort_param == "saving_asc":
+                queryset = queryset.order_by(
+                    "price"
+                )  # Placeholder - adjust based on your model
+            elif sort_param == "percent_off_desc":
+                # Assuming there's a discount_percentage field
+                queryset = queryset.order_by(
+                    "-price"
+                )  # Placeholder - adjust based on your model
+            else:
+                # Default relevance sorting (by creation date or popularity)
+                queryset = (
+                    queryset.order_by("-created_at")
+                    if hasattr(Item, "created_at")
+                    else queryset
+                )
+
+        return queryset.distinct()
+
+
 class ItemDetailAPIView(APIView):
-    
+
     permission_classes = [IsSellerOrReadOnly]
 
     def get_object(self, pk):
@@ -92,52 +151,69 @@ class ItemDetailAPIView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-
 class CartItemAPIView(APIView):
-
     """
     GET: List all cart items for the authenticated user (not seller)
     POST: Add items to cart
     DELETE: Remove items from cart
     """
+
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request, format=None):
         user = request.user
-        if hasattr(user, 'seller'):
-            return Response({'detail': 'Sellers cannot access cart.'}, status=status.HTTP_403_FORBIDDEN)
+        if hasattr(user, "seller"):
+            return Response(
+                {"detail": "Sellers cannot access cart."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
         cart, _ = Cart.objects.get_or_create(user=user, seller=None)
         serializer = CartSerializer(cart)
         return Response(serializer.data)
 
     def post(self, request, format=None):
         user = request.user
-        if hasattr(user, 'seller'):
-            return Response({'detail': 'Sellers cannot add to cart.'}, status=status.HTTP_403_FORBIDDEN)
+        if hasattr(user, "seller"):
+            return Response(
+                {"detail": "Sellers cannot add to cart."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
         cart, _ = Cart.objects.get_or_create(user=user, seller=None)
-        item_ids = request.data.get('item_ids', [])
+        item_ids = request.data.get("item_ids", [])
         if item_ids:
             items = Item.objects.filter(id__in=item_ids)
             cart.items.add(*items)
             cart.save()
             serializer = CartSerializer(cart)
             return Response(serializer.data, status=status.HTTP_200_OK)
-        return Response({'detail': 'No item_ids provided.'}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(
+            {"detail": "No item_ids provided."}, status=status.HTTP_400_BAD_REQUEST
+        )
 
     def delete(self, request, format=None):
         user = request.user
-        if hasattr(user, 'seller'):
-            return Response({'detail': 'Sellers cannot delete from cart.'}, status=status.HTTP_403_FORBIDDEN)
+        if hasattr(user, "seller"):
+            return Response(
+                {"detail": "Sellers cannot delete from cart."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
         cart = Cart.objects.filter(user=user, seller=None).first()
         if not cart:
-            return Response({'detail': 'Cart not found.'}, status=status.HTTP_404_NOT_FOUND)
-        item_ids = request.data.get('item_ids', [])
+            return Response(
+                {"detail": "Cart not found."}, status=status.HTTP_404_NOT_FOUND
+            )
+        item_ids = request.data.get("item_ids", [])
         if item_ids:
             cart.items.remove(*item_ids)
             cart.save()
-            return Response({'detail': 'Items removed from cart.'}, status=status.HTTP_200_OK)
-        return Response({'detail': 'No item_ids provided.'}, status=status.HTTP_400_BAD_REQUEST)
-    
+            return Response(
+                {"detail": "Items removed from cart."}, status=status.HTTP_200_OK
+            )
+        return Response(
+            {"detail": "No item_ids provided."}, status=status.HTTP_400_BAD_REQUEST
+        )
+
+
 # OrderUser CRUD
 class OrderUserListCreateAPIView(generics.ListCreateAPIView):
     queryset = OrderUser.objects.all()
@@ -147,6 +223,7 @@ class OrderUserListCreateAPIView(generics.ListCreateAPIView):
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
+
 class OrderUserRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = OrderUser.objects.all()
     serializer_class = OrderUserSerializer
@@ -155,21 +232,26 @@ class OrderUserRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIVie
 
 # OrderItem CRUD
 
+
 class OrderItemListCreateAPIView(generics.ListCreateAPIView):
     queryset = OrderItem.objects.all()
     serializer_class = OrderItemSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def perform_create(self, serializer):
-        original_item = serializer.validated_data.get('original_item')
+        original_item = serializer.validated_data.get("original_item")
         if not original_item:
-            raise serializers.ValidationError({'original_item_id': 'This field is required.'})
+            raise serializers.ValidationError(
+                {"original_item_id": "This field is required."}
+            )
         serializer.save(seller=original_item.seller)
+
 
 class OrderItemRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = OrderItem.objects.all()
     serializer_class = OrderItemSerializer
     permission_classes = [permissions.IsAuthenticated]
+
 
 # Order CRUD
 class OrderListCreateAPIView(generics.ListCreateAPIView):
@@ -177,25 +259,31 @@ class OrderListCreateAPIView(generics.ListCreateAPIView):
     serializer_class = OrderSerializer
     permission_classes = [permissions.IsAuthenticated]
 
+
 class OrderRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Order.objects.all()
     serializer_class = OrderSerializer
     permission_classes = [permissions.IsAuthenticated]
 
+
 class SearchAddressAPIView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def get(self, request, format=None):
-        query = request.GET.get('q', '')
+        query = request.GET.get("q", "")
         if not query:
-            return Response({'results': []})
+            return Response({"results": []})
         # Mock search results for demonstration
         results = [
-            {'id': 1, 'name': 'Bangalore, Karnataka', 'pincode': '560001'},
-            {'id': 2, 'name': 'Bangalore, Karnataka', 'pincode': '560002'},
-            {'id': 3, 'name': 'Mysore, Karnataka', 'pincode': '570001'},
-            {'id': 4, 'name': 'Hubli, Karnataka', 'pincode': '580001'},
-            {'id': 5, 'name': 'Mangalore, Karnataka', 'pincode': '575001'},
+            {"id": 1, "name": "Bangalore, Karnataka", "pincode": "560001"},
+            {"id": 2, "name": "Bangalore, Karnataka", "pincode": "560002"},
+            {"id": 3, "name": "Mysore, Karnataka", "pincode": "570001"},
+            {"id": 4, "name": "Hubli, Karnataka", "pincode": "580001"},
+            {"id": 5, "name": "Mangalore, Karnataka", "pincode": "575001"},
         ]
-        filtered_results = [r for r in results if query.lower() in r['name'].lower() or query in r['pincode']]
-        return Response({'results': filtered_results})
+        filtered_results = [
+            r
+            for r in results
+            if query.lower() in r["name"].lower() or query in r["pincode"]
+        ]
+        return Response({"results": filtered_results})

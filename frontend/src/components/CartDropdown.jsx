@@ -83,7 +83,6 @@ const CartDropdown = ({ onClose }) => {
       </div>
       <button
         onClick={() => {
-          onClose();
           navigate('/checkout');
         }}
         className="mt-4 w-full bg-emerald-600 hover:bg-emerald-700 text-white py-2 rounded-lg font-semibold transition"

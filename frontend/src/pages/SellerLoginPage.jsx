@@ -109,7 +109,7 @@ export default function SellerOnlyAuthAndDashboard() {
     try {
       await dispatch(loginUser(loginForm)).unwrap();
       // after login we'll load dashboard (useEffect below)
-      navigate("vendors/items")
+      navigate("manage-items")
       toast.success("Logged in as seller (if account is seller).");
     } catch (err) {
       console.log("login failed", err);
@@ -151,7 +151,7 @@ export default function SellerOnlyAuthAndDashboard() {
             headers: { Authorization: `Bearer ${access}` },
           });
           toast.success("Seller profile created.");
-          navigate("seller/vendors/items")
+          navigate("seller/manage-items")
         } catch (sellerErr) {
           console.error("seller create failed", sellerErr);
           toast.warn("Seller creation failed — you can add profile later in dashboard.");

@@ -19,16 +19,17 @@ import Addresses from "./pages/Addresses";
 import SavedPayments from "./pages/SavedPayments";
 import SellerAuthPage from "./pages/SellerLoginPage";
 import ManageItems from "./pages/ManageItems";
+import AdminRoutes from "./admin/adminRoutes";
+import AdminLogin from "./pages/AdminLogin";
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<MainLayout />}>
-        <Route index element={<Landing />} />
+          <Route index element={<Landing />} />
           <Route path="/home" element={<HomePage />} />
           <Route path="/product/:id" element={<ProductDetail />} />
-          <Route path="/checkout" element={<CheckoutPage />} />
           <Route path="/seller/add-items" element={<AddItems />} />
           <Route path="/seller/manage-items" element={<ManageItems />} />
           <Route path="/cart" element={<CartPage />} />
@@ -46,8 +47,11 @@ function App() {
           <Route path="/saved-payments" element={<SavedPayments />} />
         </Route>
 
-          <Route path="/seller" element={<SellerAuthPage />} />
-        
+        <Route path="/seller" element={<SellerAuthPage />} />
+        <Route path="/admin/login" element={<AdminLogin />} />
+        <Route path="/admin/*" element={<AdminRoutes />} />
+        <Route path="/checkout" element={<CheckoutPage />} />
+
       </Routes>
     </BrowserRouter>
   );

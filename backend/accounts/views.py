@@ -15,6 +15,8 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken, TokenError
 import logging
 import random
+from .permissions import IsSuperUser
+from rest_framework import mixins, viewsets, permissions
 
 from accounts.serializers import (
     RegisterSerializer,
@@ -22,13 +24,13 @@ from accounts.serializers import (
     SellerRegistrationSerializer,
     SellerSerializer,
 )
-from accounts.models import User, OTP
+from accounts.models import User, OTP, Seller
 
 logger = logging.getLogger(__name__)
 
 
 def generate_otp(length=6):
-    return ''.join(str(random.randint(0, 9)) for _ in range(length))
+    return "".join(str(random.randint(0, 9)) for _ in range(length))
 
 
 class LoginView(APIView):
@@ -39,7 +41,10 @@ class LoginView(APIView):
         password = request.data.get("password", "")
 
         if not email or not password:
-            return Response({"detail": "Email and Password is required", "status": "error"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "Email and Password is required", "status": "error"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         user = authenticate(request, username=email, password=password)
 
@@ -55,15 +60,25 @@ class LoginView(APIView):
                 "message": "Login successful",
                 "status": "success",
             }
+            print("superadmin data whileloading",response_data)
             return Response(response_data, status=status.HTTP_200_OK)
         else:
             try:
                 user = User.objects.get(email=email)
                 if not user.is_active:
-                    return Response({"detail": "Account is not active. Please verify your email."}, status=status.HTTP_403_FORBIDDEN)
+                    return Response(
+                        {"detail": "Account is not active. Please verify your email."},
+                        status=status.HTTP_403_FORBIDDEN,
+                    )
             except User.DoesNotExist:
-                return Response({"detail": "Invalid credentials.", "status": "error"}, status=status.HTTP_401_UNAUTHORIZED)
-            return Response({"detail": "Invalid credentials.", "status": "error"}, status=status.HTTP_401_UNAUTHORIZED)
+                return Response(
+                    {"detail": "Invalid credentials.", "status": "error"},
+                    status=status.HTTP_401_UNAUTHORIZED,
+                )
+            return Response(
+                {"detail": "Invalid credentials.", "status": "error"},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
 
 
 class LogoutView(APIView):
@@ -73,16 +88,23 @@ class LogoutView(APIView):
             refresh_token = request.data["refresh"]
             token = RefreshToken(refresh_token)
             token.blacklist()
-            return Response({"detail": "Logout successful."}, status=status.HTTP_205_RESET_CONTENT)
+            return Response(
+                {"detail": "Logout successful."}, status=status.HTTP_205_RESET_CONTENT
+            )
         except KeyError:
-            return Response({"detail": "Refresh token not provided."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "Refresh token not provided."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         except TokenError:
-            return Response({"detail": "Invalid token."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "Invalid token."}, status=status.HTTP_400_BAD_REQUEST
+            )
 
 
 class RegisterView(APIView):
     permission_classes = [permissions.AllowAny]
-                                                
+
     def post(self, request, *args, **kwargs):
         serializer = RegisterSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -92,11 +114,20 @@ class RegisterView(APIView):
             otp = OTP.objects.create(user=user, code=otp_code)
             try:
                 self.send_otp_email(user.email, otp_code)
-                return Response({"message": "User registered. An OTP has been sent to your email to verify it."}, status=status.HTTP_201_CREATED)
+                return Response(
+                    {
+                        "message": "User registered. An OTP has been sent to your email to verify it."
+                    },
+                    status=status.HTTP_201_CREATED,
+                )
             except Exception as e:
                 logger.error(f"Failed to send OTP email to {user.email}: {e}")
                 return Response(
-                    {"message": "User registered but we could not send the OTP email.", "detail": "Use the request-otp endpoint to request another OTP.", "email": user.email},
+                    {
+                        "message": "User registered but we could not send the OTP email.",
+                        "detail": "Use the request-otp endpoint to request another OTP.",
+                        "email": user.email,
+                    },
                     status=status.HTTP_201_CREATED,
                 )
 
@@ -111,7 +142,13 @@ class RegisterView(APIView):
             f"Team bigbasket\n\n"
         )
         try:
-            send_mail(subject=subject, message=message, from_email=settings.DEFAULT_FROM_EMAIL, recipient_list=[to_email], fail_silently=False)
+            send_mail(
+                subject=subject,
+                message=message,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[to_email],
+                fail_silently=False,
+            )
             logger.info(f"Sent OTP to {to_email}")
         except BadHeaderError as e:
             logger.error(f"BadHeaderError when sending OTP to {to_email}: {e}")
@@ -129,17 +166,24 @@ class VerifyOTPView(APIView):
         otp_code = request.data.get("otp")
 
         if not otp_code or not email:
-            return Response({"error": "No otp or email found"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": "No otp or email found"}, status=status.HTTP_400_BAD_REQUEST
+            )
 
         try:
             user = User.objects.get(email=email)
         except User.DoesNotExist:
-            return Response({"detail": "No user found"}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"detail": "No user found"}, status=status.HTTP_404_NOT_FOUND
+            )
 
         otp = OTP.objects.filter(user=user).order_by("-created_at").first()
 
         if not otp:
-            return Response({"detail": "No OTP found for this user. Please request a new one."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "No OTP found for this user. Please request a new one."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         # Validate expiry
         is_valid = False
@@ -153,10 +197,14 @@ class VerifyOTPView(APIView):
             is_valid = timezone.now() <= (otp.created_at + ttl)
 
         if not is_valid:
-            return Response({"detail": "OTP has expired."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "OTP has expired."}, status=status.HTTP_400_BAD_REQUEST
+            )
 
         if otp.code != str(otp_code):
-            return Response({"detail": "Invalid OTP code."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "Invalid OTP code."}, status=status.HTTP_400_BAD_REQUEST
+            )
 
         if not user.is_active:
             user.is_active = True
@@ -182,3 +230,38 @@ class VerifyOTPView(APIView):
             status=status.HTTP_200_OK,
         )
 
+
+class UserAdminViewSet(
+    mixins.ListModelMixin,       
+    mixins.RetrieveModelMixin,  
+    mixins.CreateModelMixin,    
+    mixins.UpdateModelMixin,     
+    mixins.DestroyModelMixin,    
+    viewsets.GenericViewSet
+):
+    queryset = User.objects.all()
+    serializer_class = UserSerializers
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request, *args, **kwargs):
+        if kwargs.get("pk"):
+            return self.retrieve(request, *args, **kwargs)
+        return self.list(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        return self.create(request, *args, **kwargs)
+
+    def put(self, request, *args, **kwargs):
+        return self.update(request, *args, **kwargs)
+
+    def patch(self, request, *args, **kwargs):
+        return self.partial_update(request, *args, **kwargs)
+
+    def delete(self, request, *args, **kwargs):
+        return self.destroy(request, *args, **kwargs)
+
+
+class SellerAdminViewSet(viewsets.ModelViewSet):
+    queryset = Seller.objects.all()
+    serializer_class = SellerSerializer
+    permission_classes = [IsSuperUser]

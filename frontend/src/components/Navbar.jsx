@@ -279,7 +279,7 @@ function Navbar() {
                 </span>
               </div>
 
-              {isCartOpen && <CartDropdown onClose={() => setIsCartOpen(false)} />}
+              {/* {isCartOpen && <CartDropdown onClose={() => setIsCartOpen(false)} />} */}
 
               {/* Shop by Category */}
               {/* Removed the Shop by Category button on the right side beside My Basket as per user request */}

@@ -1,25 +1,29 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
-from accounts.models import Seller , OTP
+from accounts.models import Seller, OTP
 
 User = get_user_model()
 
+
 class UserSerializers(serializers.ModelSerializer):
     is_seller = serializers.ReadOnlyField()
-    
+    is_superuser = serializers.ReadOnlyField()
+
     class Meta:
         model = User
-        fields =(
+        fields = (
             "id",
             "email",
             "first_name",
             "last_name",
             "is_email_verified",
             "is_seller",
+            "is_superuser",
         )
-        read_only_fields = ("id", "is_email_verified", "is_seller")
-        
+        read_only_fields = ("id", "is_email_verified", "is_seller", "is_superuser")
+
+
 class RegisterSerializer(serializers.ModelSerializer):
 
     password = serializers.CharField(
@@ -59,28 +63,24 @@ class RegisterSerializer(serializers.ModelSerializer):
             last_name=validated_data["last_name"],
             password=validated_data["password"],
         )
-        
+
         return user
-    
-    
+
+
 class SellerRegistrationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Seller
-        fields = [
-            "shop_name",
-            "gst_number",
-            "address"
-        ]
-        
-    def create(self,validated_data):
-        user=self.context["request"].user
-        
-        if hasattr(user,"seller"):
+        fields = ["shop_name", "gst_number", "address"]
+
+    def create(self, validated_data):
+        user = self.context["request"].user
+
+        if hasattr(user, "seller"):
             raise serializers.ValidationError("User is already a registered seller")
-        
-        return Seller.objects.create(user=user,**validated_data)
-    
-    
+
+        return Seller.objects.create(user=user, **validated_data)
+
+
 class SellerSerializer(serializers.ModelSerializer):
     user_email = serializers.CharField(source="user.email", read_only=True)
     user_name = serializers.CharField(source="user.get_full_name", read_only=True)

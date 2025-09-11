@@ -113,7 +113,7 @@ const CardCarousel = () => {
           WebkitOverflowScrolling: "touch",
           scrollbarWidth: "none",
           msOverflowStyle: "none",
-          touchAction: "pan-y", // allow vertical page scroll, block horizontal pan
+          touchAction: "pan-y", 
         }}
       >
         {loading ? (
@@ -124,7 +124,7 @@ const CardCarousel = () => {
           </div>
         ) : displayed.length ? (
           displayed.slice(0, 6).map((item) => (
-            <div key={item.id} className="min-w-[220px] max-w-[220px] flex-shrink-0">
+            <div key={item.id} className="min-w-[260px] max-w-[180px] flex-shrink-0">
               <Card item={item} />
             </div>
           ))

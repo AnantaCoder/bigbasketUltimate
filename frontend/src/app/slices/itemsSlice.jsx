@@ -2,16 +2,32 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { toast } from "react-toastify";
 import api from "../../services/api";
 
-
 export const fetchItems = createAsyncThunk(
   "items/fetchItems",
-  async ({ page = 1, pageSize = 10, search, category, ...params } = {}, { rejectWithValue }) => {
+  async (
+    {
+      page = 1,
+      pageSize = 10,
+      search,
+      category,
+      manufacturer,
+      item_type,
+      min_price,
+      max_price,
+      ...params
+    } = {},
+    { rejectWithValue }
+  ) => {
     try {
       const response = await api.get("/store/new-items/", {
         params: {
           ...params,
           ...(search ? { search } : {}),
           ...(category ? { category } : {}),
+          ...(manufacturer ? { manufacturer } : {}),
+          ...(item_type ? { item_type } : {}),
+          ...(min_price ? { price__gte: min_price } : {}),
+          ...(max_price ? { price__lte: max_price } : {}),
           page,
           page_size: pageSize,
         },
@@ -29,9 +45,6 @@ export const fetchItems = createAsyncThunk(
     }
   }
 );
-
-
-
 
 export const fetchItem = createAsyncThunk(
   "items/fetchItem",
@@ -77,10 +90,10 @@ export const createItem = createAsyncThunk(
       formData.append("refers_token", itemData.refers_token || "");
 
       if (itemData.image && itemData.image.length > 0) {
-  itemData.image.forEach((file) => {
-    formData.append("image", file);  
-  });
-}
+        itemData.image.forEach((file) => {
+          formData.append("image", file);
+        });
+      }
 
       // POST request
       const response = await api.post("/store/new-items/", formData, {
@@ -106,13 +119,10 @@ export const createItem = createAsyncThunk(
         autoClose: 3000,
       });
 
-      return rejectWithValue(
-        error.response?.data || "Something went wrong"
-      );
+      return rejectWithValue(error.response?.data || "Something went wrong");
     }
   }
 );
-
 
 export const updateItem = createAsyncThunk(
   "items/updateItem",
@@ -163,6 +173,22 @@ export const deleteItem = createAsyncThunk(
           "failed to delete item",
       });
       return rejectWithValue(error.response?.data || error.message);
+    }
+  }
+);
+
+export const fetchSellerItems = createAsyncThunk(
+  "items/fetchSellerItems",
+  async ({ sellerId, page, pageSize = 10 }, { rejectWithValue }) => {
+    try {
+      const response = await api.get(
+        `store/new-items/?seller=${sellerId}&page=${page}&page_size=${pageSize}`
+      );
+      return response.data;
+    } catch (err) {
+      return rejectWithValue(
+        err.response?.data || { message: "Failed to fetch seller items" }
+      );
     }
   }
 );
@@ -276,6 +302,24 @@ const itemsSlice = createSlice({
       })
       .addCase(deleteItem.rejected, (state, action) => {
         state.deleting = false;
+        state.error = action.payload;
+      })
+      .addCase(fetchSellerItems.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchSellerItems.fulfilled, (state, action) => {
+        state.loading = false;
+        if (Array.isArray(action.payload)) {
+          state.items = action.payload;
+        } else if (action.payload && Array.isArray(action.payload.results)) {
+          state.items = action.payload.results;
+        } else {
+          state.items = action.payload;
+        }
+      })
+      .addCase(fetchSellerItems.rejected, (state, action) => {
+        state.loading = false;
         state.error = action.payload;
       });
   },

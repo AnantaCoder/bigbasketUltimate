@@ -1,0 +1,8 @@
+- [x] Import real CardGrid, NavigationBar, Redux hooks, and fetchCategories
+- [x] Replace mock NavigationBar with real one
+- [x] Remove mock CardGrid definition
+- [x] Replace useState for categories with useSelector from Redux
+- [x] Dispatch fetchCategories on component mount
+- [x] Define mockSubcategories object for subcategory logic
+- [x] Update JSX to use real CardGrid component
+- [ ] Test the updated HomePage for data loading

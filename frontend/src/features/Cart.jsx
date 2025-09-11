@@ -9,6 +9,7 @@ import {
   selectCart,
   selectCartStatus
 } from '../app/slices/CartSlice';
+import { useNavigate } from 'react-router-dom';
 
 const CartPage = () => {
   const dispatch = useDispatch();
@@ -16,6 +17,7 @@ const CartPage = () => {
   const status = useSelector(selectCartStatus);
   const savedForLater = useSelector(state => state.cart.savedForLater);
   const footerRef = useRef(null);
+  const navigate = useNavigate()
 
   const [showStickyBar, setShowStickyBar] = useState(true);
 
@@ -196,7 +198,11 @@ const CartPage = () => {
               </div>
             </div>
 
-            <button className="bg-red-600 text-white px-6 py-3 rounded-lg font-semibold">
+            <button
+             onClick={() => {
+          navigate('/checkout');
+        }}
+            className="bg-red-600 text-white px-6 py-3 rounded-lg font-semibold">
               Proceed to Checkout
             </button>
           </div>

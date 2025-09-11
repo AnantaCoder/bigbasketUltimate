@@ -21,7 +21,6 @@ const SkeletonCard = () => (
   </div>
 );
 
-
 /**
  * A grid of skeleton cards.
  */
@@ -33,7 +32,11 @@ const SkeletonGrid = ({ count = PAGE_SIZE }) => (
   </div>
 );
 
-const CardGrid = ({ categoryId = null }) => {
+const CardGrid = ({
+  categoryId = null,
+  filters = {},
+  sortBy = "relevance",
+}) => {
   const dispatch = useDispatch();
   const [items, setItems] = useState([]);
   const [page, setPage] = useState(1);
@@ -55,12 +58,40 @@ const CardGrid = ({ categoryId = null }) => {
           setLoadingMore(true);
         }
 
-        const res = await dispatch(fetchItems({ page: nextPage, pageSize: PAGE_SIZE, category: categoryId })).unwrap();
+        // Build params object with all filters
+        const params = {
+          page: nextPage,
+          pageSize: PAGE_SIZE,
+          category: categoryId,
+          sort: sortBy,
+          ...filters,
+        };
+
+        // Remove empty filter values to avoid unnecessary API calls
+        Object.keys(params).forEach((key) => {
+          if (
+            params[key] === "" ||
+            params[key] === null ||
+            (Array.isArray(params[key]) && params[key].length === 0)
+          ) {
+            delete params[key];
+          }
+        });
+
+        const res = await dispatch(fetchItems(params)).unwrap();
 
         if (nextPage === 1) {
           setItems(res.results || []);
         } else {
-          setItems((prev) => [...prev, ...(res.results || [])]);
+          setItems((prev) => {
+            const newItems = res.results || [];
+            // Prevent duplicate items by checking IDs
+            const existingIds = new Set(prev.map((item) => item.id));
+            const uniqueNewItems = newItems.filter(
+              (item) => !existingIds.has(item.id)
+            );
+            return [...prev, ...uniqueNewItems];
+          });
         }
 
         setHasNext(Boolean(res.next));
@@ -72,20 +103,20 @@ const CardGrid = ({ categoryId = null }) => {
         setLoadingMore(false);
       }
     },
-    [dispatch, categoryId]
+    [dispatch, categoryId, JSON.stringify(filters), sortBy]
   );
 
   useEffect(() => {
     loadPage(1);
   }, [loadPage]);
 
-  // Reset items when category changes
+  // Reset items when category, filters, or sortBy changes
   useEffect(() => {
     setItems([]);
     setPage(1);
     setHasNext(true);
     loadPage(1);
-  }, [categoryId]);
+  }, [categoryId, JSON.stringify(filters), sortBy]);
 
   useEffect(() => {
     if (!sentinelRef.current) return;
@@ -93,7 +124,12 @@ const CardGrid = ({ categoryId = null }) => {
     observer.current = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
-          if (entry.isIntersecting && hasNext && !loadingMore && !loadingInitial) {
+          if (
+            entry.isIntersecting &&
+            hasNext &&
+            !loadingMore &&
+            !loadingInitial
+          ) {
             loadPage(page + 1);
           }
         });
@@ -105,7 +141,6 @@ const CardGrid = ({ categoryId = null }) => {
 
     return () => {
       if (observer.current && sentinelRef.current) {
-        // A check to ensure sentinelRef.current exists before unobserving
         observer.current.unobserve(sentinelRef.current);
       }
       observer.current = null;
@@ -134,8 +169,14 @@ const CardGrid = ({ categoryId = null }) => {
   if (!items.length) {
     return (
       <div className="w-full min-h-screen flex flex-col items-center justify-center bg-gray-100 p-6">
-        <img src="https://placehold.co/448x250/FFFFFF/CCCCCC?text=No+Items" alt="No items found" className="max-w-md w-full object-contain mb-6 rounded-lg" />
-        <p className="text-gray-500 text-lg md:text-xl font-medium">No items found.</p>
+        <img
+          src="https://placehold.co/448x250/FFFFFF/CCCCCC?text=No+Items"
+          alt="No items found"
+          className="max-w-md w-full object-contain mb-6 rounded-lg"
+        />
+        <p className="text-gray-500 text-lg md:text-xl font-medium">
+          No items found.
+        </p>
         <button
           onClick={() => {
             setPage(1);
@@ -156,29 +197,20 @@ const CardGrid = ({ categoryId = null }) => {
         <h2 className="text-2xl font-bold">Items</h2>
         <div className="flex items-center gap-4">
           <div className="text-sm text-gray-500">{items.length} items</div>
-          {/* <button
-            onClick={() => {
-              setPage(1);
-              setHasNext(true);
-              loadPage(1);
-            }}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition-colors"
-          >
-            Refresh
-          </button> */}
         </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4">
-        {items.map((item) => (
-          <Card key={item.id} item={item} />
+        {items.map((item, index) => (
+          <Card key={item.id || `item-${index}`} item={item} />
         ))}
       </div>
 
       <div className="mt-6 flex flex-col items-center">
-        {/* Updated to show 3 skeletons when loading more */}
         {loadingMore && <SkeletonGrid count={3} />}
-        {!hasNext && <div className="text-sm text-gray-500 mt-4">No more items.</div>}
+        {!hasNext && (
+          <div className="text-sm text-gray-500 mt-4">No more items.</div>
+        )}
         <div ref={sentinelRef} style={{ width: "100%", height: 1 }} />
       </div>
     </section>
