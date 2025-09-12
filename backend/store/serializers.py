@@ -1,6 +1,6 @@
 from rest_framework import serializers
-from store.models import Item, Category, Cart, OrderUser, OrderItem, Order
-from accounts.models import Seller 
+from store.models import Item, Category, Cart, CartItem, OrderUser, OrderItem, Order
+from accounts.models import Seller
 from supabase import create_client, Client
 from django.conf import settings
 import uuid
@@ -159,20 +159,50 @@ class ItemSerializer(serializers.ModelSerializer):
 
 
 # ==============================
+# CartItem Serializer
+# ==============================
+class CartItemSerializer(serializers.ModelSerializer):
+    item = ItemSerializer(read_only=True)
+    item_id = serializers.PrimaryKeyRelatedField(
+        queryset=Item.objects.all(),
+        source='item',
+        write_only=True
+    )
+    total_price = serializers.SerializerMethodField()
+
+    class Meta:
+        model = CartItem
+        fields = [
+            'id',
+            'item',
+            'item_id',
+            'quantity',
+            'total_price',
+        ]
+        read_only_fields = ['id', 'item', 'total_price']
+
+    def get_total_price(self, obj):
+        return obj.quantity * obj.item.price
+
+
+# ==============================
 # Cart Serializer
 # ==============================
 class CartSerializer(serializers.ModelSerializer):
     user = serializers.StringRelatedField(read_only=True)
     seller = serializers.StringRelatedField(read_only=True)
-    items = ItemSerializer(many=True, read_only=True)
-    price = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
+    cart_items = CartItemSerializer(many=True, read_only=True)
     total_price = serializers.SerializerMethodField()
 
-    item_ids = serializers.PrimaryKeyRelatedField(
-        queryset=Item.objects.all(),
-        many=True,
+    # For adding items - expect item_ids and optional quantities
+    item_ids = serializers.ListField(
+        child=serializers.IntegerField(),
         write_only=True,
-        source='items',
+        required=False
+    )
+    quantities = serializers.ListField(
+        child=serializers.IntegerField(min_value=1),
+        write_only=True,
         required=False
     )
 
@@ -182,17 +212,17 @@ class CartSerializer(serializers.ModelSerializer):
             'id',
             'user',
             'seller',
-            'items',
+            'cart_items',
             'item_ids',
+            'quantities',
             'created_at',
             'updated_at',
-            'price',
             'total_price',
         ]
-        read_only_fields = ['id', 'user', 'seller', 'items', 'created_at', 'updated_at', 'total_price']
+        read_only_fields = ['id', 'user', 'seller', 'cart_items', 'created_at', 'updated_at', 'total_price']
 
     def get_total_price(self, obj):
-        return sum(item.price for item in obj.items.all())
+        return sum(cart_item.total_price for cart_item in obj.cart_items.all())
 
 
 # ==============================

@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from accounts.models import User, Seller
-from store.models import Item, Category, Cart, OrderUser, OrderItem, Order
+from store.models import Item, Category, Cart, CartItem, OrderUser, OrderItem, Order
 from store.serializers import (
     ItemSerializer,
     CategorySerializer,
@@ -172,23 +172,42 @@ class CartItemAPIView(APIView):
         return Response(serializer.data)
 
     def post(self, request, format=None):
-        user = request.user
-        if hasattr(user, "seller"):
+        try:
+            user = request.user
+            if hasattr(user, "seller"):
+                return Response(
+                    {"detail": "Sellers cannot add to cart.", "user_type": "seller"},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+            cart, created = Cart.objects.get_or_create(user=user, seller=None)
+            item_ids = request.data.get("item_ids", [])
+            quantities = request.data.get("quantities", [])
+            if item_ids:
+                # Validate item_ids and quantities length
+                if quantities and len(quantities) != len(item_ids):
+                    return Response(
+                        {"detail": "Length of quantities must match length of item_ids."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+                # Create or update CartItem instances
+                for idx, item_id in enumerate(item_ids):
+                    quantity = quantities[idx] if quantities else 1
+                    item = Item.objects.filter(id=item_id).first()
+                    if not item:
+                        return Response(
+                            {"detail": f"Item with id {item_id} not found."},
+                            status=status.HTTP_404_NOT_FOUND,
+                        )
+                    cart_item, created = CartItem.objects.get_or_create(cart=cart, item=item)
+                    cart_item.quantity = quantity
+                    cart_item.save()
+                serializer = CartSerializer(cart)
+                return Response(serializer.data, status=status.HTTP_200_OK)
             return Response(
-                {"detail": "Sellers cannot add to cart."},
-                status=status.HTTP_403_FORBIDDEN,
+                {"detail": "No item_ids provided.", "received_data": request.data}, status=status.HTTP_400_BAD_REQUEST
             )
-        cart, _ = Cart.objects.get_or_create(user=user, seller=None)
-        item_ids = request.data.get("item_ids", [])
-        if item_ids:
-            items = Item.objects.filter(id__in=item_ids)
-            cart.items.add(*items)
-            cart.save()
-            serializer = CartSerializer(cart)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        return Response(
-            {"detail": "No item_ids provided."}, status=status.HTTP_400_BAD_REQUEST
-        )
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
     def delete(self, request, format=None):
         user = request.user
@@ -204,14 +223,46 @@ class CartItemAPIView(APIView):
             )
         item_ids = request.data.get("item_ids", [])
         if item_ids:
-            cart.items.remove(*item_ids)
-            cart.save()
+            # Remove CartItem instances for the specified items
+            CartItem.objects.filter(cart=cart, item_id__in=item_ids).delete()
             return Response(
                 {"detail": "Items removed from cart."}, status=status.HTTP_200_OK
             )
         return Response(
             {"detail": "No item_ids provided."}, status=status.HTTP_400_BAD_REQUEST
         )
+
+    def patch(self, request, format=None):
+        """Update quantity of an item in cart"""
+        user = request.user
+        if hasattr(user, "seller"):
+            return Response(
+                {"detail": "Sellers cannot update cart."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        cart = Cart.objects.filter(user=user, seller=None).first()
+        if not cart:
+            return Response(
+                {"detail": "Cart not found."}, status=status.HTTP_404_NOT_FOUND
+            )
+        item_id = request.data.get("item_id")
+        quantity = request.data.get("quantity")
+        if not item_id or quantity is None:
+            return Response(
+                {"detail": "item_id and quantity are required."}, status=status.HTTP_400_BAD_REQUEST
+            )
+        try:
+            cart_item = CartItem.objects.get(cart=cart, item_id=item_id)
+            cart_item.quantity = quantity
+            cart_item.save()
+            serializer = CartSerializer(cart)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except CartItem.DoesNotExist:
+            return Response(
+                {"detail": "Item not found in cart."}, status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 # OrderUser CRUD

@@ -18,7 +18,7 @@ urlpatterns = [
 	path('gateway-logs/<int:pk>/', PaymentGatewayLogRetrieveAPIView.as_view(), name='gatewaylog-detail'),
 
 	# Payment intent
-	path('payment-intent/', PaymentIntentAPIView.as_view(), name='payment-intent'),
+	path('create-payment-intent/', PaymentIntentAPIView.as_view(), name='create-payment-intent'),
 
 	# Special webhook
 	path('webhook/', PaymentWebhookAPIView.as_view(), name='payment-webhook'),

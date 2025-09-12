@@ -16,7 +16,8 @@ const Orders = () => {
     setError("");
     try {
       const res = await api.get("/store/orders/");
-      setOrders(res.data);
+      const data = res.data;
+      setOrders(Array.isArray(data) ? data : data.results || []);
     } catch (err) {
       setError("Failed to fetch orders");
     }
@@ -27,7 +28,7 @@ const Orders = () => {
     fetchOrders();
   }, []);
 
-  const filteredOrders = orders.filter(
+  const filteredOrders = (orders || []).filter(
     (o) =>
       o.status?.toLowerCase().includes(search.toLowerCase()) ||
       String(o.id).includes(search)
@@ -164,13 +165,17 @@ const Orders = () => {
             <div style={{ marginBottom: 12 }}>
               <label>Status:</label>
               <br />
-              <input
+              <select
                 name="status"
                 value={form.status}
                 onChange={handleChange}
                 required
                 style={{ width: "100%", padding: 8 }}
-              />
+              >
+                <option value="pending">Pending</option>
+                <option value="processing">Processing</option>
+                <option value="shipped">Shipped</option>
+              </select>
             </div>
             <div style={{ marginBottom: 12 }}>
               <label>Total:</label>

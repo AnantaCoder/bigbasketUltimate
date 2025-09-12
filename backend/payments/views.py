@@ -35,13 +35,34 @@ class PaymentGatewayLogRetrieveAPIView(generics.RetrieveAPIView):
 	serializer_class = PaymentGatewayLogSerializer
 	permission_classes = [permissions.IsAuthenticated]
 
-# 4. Payment Intent (dummy implementation)
+# 4. Payment Intent (Stripe implementation)
 class PaymentIntentAPIView(views.APIView):
 	permission_classes = [permissions.IsAuthenticated]
 	def post(self, request):
-		# Here you would integrate with a real payment gateway
-		# For now, just return a dummy intent
-		return Response({"intent": "dummy_intent_id", "client_secret": "dummy_secret"})
+		try:
+			from django.conf import settings
+
+			# Check if Stripe keys are configured
+			if not settings.STRIPE_SECRET_KEY:
+				return Response({"error": "Stripe is not configured. Please set STRIPE_SECRET_KEY in your environment variables."}, status=500)
+
+			import stripe
+			stripe.api_key = settings.STRIPE_SECRET_KEY
+
+			data = request.data
+			amount = int(float(data.get("amount")) * 100)  # in cents
+			currency = data.get("currency", "usd")
+
+			# Create PaymentIntent
+			intent = stripe.PaymentIntent.create(
+				amount=amount,
+				currency=currency,
+				automatic_payment_methods={"enabled": True},
+			)
+
+			return Response({"clientSecret": intent["client_secret"]})
+		except Exception as e:
+			return Response({"error": str(e)}, status=400)
 
 # 5. Special Webhook (dummy implementation)
 class PaymentWebhookAPIView(views.APIView):

@@ -6,17 +6,24 @@ const Products = () => {
   const [search, setSearch] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [editProduct, setEditProduct] = useState(null);
-  const [form, setForm] = useState({ name: "", price: "", description: "" });
+  const [form, setForm] = useState({ item_name: "", price: "", description: "" });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Fetch products from API
+  // Fetch all products from API without pagination
   const fetchProducts = async () => {
     setLoading(true);
     setError("");
     try {
       const res = await api.get("/store/items/");
-      setProducts(res.data);
+      const data = res.data;
+      if (Array.isArray(data)) {
+        setProducts(data);
+      } else if (data && Array.isArray(data.results)) {
+        setProducts(data.results);
+      } else {
+        setProducts([]);
+      }
     } catch (err) {
       setError("Failed to fetch products");
     }
@@ -29,20 +36,20 @@ const Products = () => {
 
   const filteredProducts = products.filter(
     (p) =>
-      p.name?.toLowerCase().includes(search.toLowerCase()) ||
+      p.item_name?.toLowerCase().includes(search.toLowerCase()) ||
       p.description?.toLowerCase().includes(search.toLowerCase())
   );
 
   const openAddModal = () => {
     setEditProduct(null);
-    setForm({ name: "", price: "", description: "" });
+    setForm({ item_name: "", price: "", description: "" });
     setModalOpen(true);
   };
 
   const openEditModal = (product) => {
     setEditProduct(product);
     setForm({
-      name: product.name,
+      item_name: product.item_name,
       price: product.price,
       description: product.description,
     });
@@ -100,6 +107,7 @@ const Products = () => {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           style={{ padding: 8, width: 200, marginRight: 16 }}
+          name="item_name"
         />
         <button onClick={openAddModal} style={{ padding: 8 }}>
           Add Product
@@ -119,34 +127,35 @@ const Products = () => {
           </tr>
         </thead>
         <tbody>
-          {filteredProducts.map((product) => (
-            <tr key={product.id}>
-              <td style={{ padding: 8, border: "1px solid #ddd" }}>
-                {product.name}
-              </td>
-              <td style={{ padding: 8, border: "1px solid #ddd" }}>
-                {product.price}
-              </td>
-              <td style={{ padding: 8, border: "1px solid #ddd" }}>
-                {product.description}
-              </td>
-              <td style={{ padding: 8, border: "1px solid #ddd" }}>
-                <button
-                  onClick={() => openEditModal(product)}
-                  style={{ marginRight: 8 }}
-                >
-                  Edit
-                </button>
-                <button
-                  onClick={() => handleDelete(product.id)}
-                  style={{ color: "red" }}
-                >
-                  Delete
-                </button>
-              </td>
-            </tr>
-          ))}
-          {filteredProducts.length === 0 && !loading && (
+          {filteredProducts.length > 0 ? (
+            filteredProducts.map((product) => (
+              <tr key={product.id}>
+                <td style={{ padding: 8, border: "1px solid #ddd" }}>
+                  {product.item_name}
+                </td>
+                <td style={{ padding: 8, border: "1px solid #ddd" }}>
+                  {product.price}
+                </td>
+                <td style={{ padding: 8, border: "1px solid #ddd" }}>
+                  {product.description}
+                </td>
+                <td style={{ padding: 8, border: "1px solid #ddd" }}>
+                  <button
+                    onClick={() => openEditModal(product)}
+                    style={{ marginRight: 8 }}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => handleDelete(product.id)}
+                    style={{ color: "red" }}
+                  >
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            ))
+          ) : (
             <tr>
               <td colSpan={4} style={{ textAlign: "center", padding: 16 }}>
                 No products found.
@@ -184,8 +193,8 @@ const Products = () => {
               <label>Name:</label>
               <br />
               <input
-                name="name"
-                value={form.name}
+                name="item_name"
+                value={form.item_name}
                 onChange={handleChange}
                 required
                 style={{ width: "100%", padding: 8 }}

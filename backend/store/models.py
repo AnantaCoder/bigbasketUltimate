@@ -78,20 +78,39 @@ class Item(models.Model):
     
     
     
+# CartItem through model to handle quantity per item in cart
+class CartItem(models.Model):
+    cart = models.ForeignKey('Cart', on_delete=models.CASCADE, related_name='cart_items')
+    item = models.ForeignKey(Item, on_delete=models.CASCADE, related_name='cart_items')
+    quantity = models.PositiveIntegerField(default=1)
+    added_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('cart', 'item')
+
+    def __str__(self):
+        return f"{self.quantity} x {self.item.item_name} in {self.cart}"
+
+    @property
+    def total_price(self):
+        return self.quantity * self.item.price
+
+
 # create a cart model with user seller and user as foreign key and items referenced  from item table
 class Cart(models.Model):
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='carts')
     seller = models.ForeignKey(Seller, on_delete=models.CASCADE, related_name='carts', null=True, blank=True)
-    items = models.ManyToManyField(Item, related_name='carts')
+    items = models.ManyToManyField(Item, related_name='carts', through=CartItem)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"Cart of {self.user.username} with {self.items.count()} items"
-    
-    def get_total_price (self , obj):
-            return sum(item.price for item in self.items.all())
+        return f"Cart of {self.user.username} with {self.cart_items.count()} items"
+
+    @property
+    def total_price(self):
+        return sum(cart_item.total_price for cart_item in self.cart_items.all())
 
 # OrderUser model
 class OrderUser(models.Model):

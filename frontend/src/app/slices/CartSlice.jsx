@@ -222,6 +222,13 @@ const cartSlice = createSlice({
       .addCase(fetchCart.fulfilled, (state, action) => {
         state.status = "succeeded";
         state.cart = action.payload;
+        // Transform cart_items to items for frontend compatibility
+        if (action.payload && action.payload.cart_items) {
+          action.payload.items = action.payload.cart_items.map(cartItem => ({
+            ...cartItem.item,
+            quantity: cartItem.quantity
+          }));
+        }
       })
       .addCase(fetchCart.rejected, (state, action) => {
         state.status = "failed";
@@ -231,6 +238,13 @@ const cartSlice = createSlice({
       // Add Item to Cart
       .addCase(addItemToCart.fulfilled, (state, action) => {
         state.cart = action.payload;
+        // Transform cart_items to items for frontend compatibility
+        if (action.payload && action.payload.cart_items) {
+          action.payload.items = action.payload.cart_items.map(cartItem => ({
+            ...cartItem.item,
+            quantity: cartItem.quantity
+          }));
+        }
       })
       .addCase(addItemToCart.rejected, (state, action) => {
         state.error = action.payload;
@@ -256,6 +270,13 @@ const cartSlice = createSlice({
       // Update Item Quantity
       .addCase(updateItemQuantity.fulfilled, (state, action) => {
         state.cart = action.payload;
+        // Transform cart_items to items for frontend compatibility
+        if (action.payload && action.payload.cart_items) {
+          action.payload.items = action.payload.cart_items.map(cartItem => ({
+            ...cartItem.item,
+            quantity: cartItem.quantity
+          }));
+        }
       })
       .addCase(updateItemQuantity.rejected, (state, action) => {
         state.error = action.payload;

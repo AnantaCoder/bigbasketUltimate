@@ -6,11 +6,11 @@ const Sidebar = () => (
     <h2>SuperAdmin</h2>
     <nav>
       <ul style={{ listStyle: "none", padding: 0 }}>
-        <li><NavLink to="" end style={({ isActive }) => ({ color: isActive ? "#61dafb" : "#fff" })}>Dashboard</NavLink></li>
-        <li><NavLink to="users" style={({ isActive }) => ({ color: isActive ? "#61dafb" : "#fff" })}>Users</NavLink></li>
-        <li><NavLink to="products" style={({ isActive }) => ({ color: isActive ? "#61dafb" : "#fff" })}>Products</NavLink></li>
-        <li><NavLink to="orders" style={({ isActive }) => ({ color: isActive ? "#61dafb" : "#fff" })}>Orders</NavLink></li>
-        <li><NavLink to="settings" style={({ isActive }) => ({ color: isActive ? "#61dafb" : "#fff" })}>Settings</NavLink></li>
+        <li><NavLink to="/admin" end style={({ isActive }) => ({ color: isActive ? "#61dafb" : "#fff" })}>Dashboard</NavLink></li>
+        <li><NavLink to="/admin/users" style={({ isActive }) => ({ color: isActive ? "#61dafb" : "#fff" })}>Users</NavLink></li>
+        <li><NavLink to="/admin/products" style={({ isActive }) => ({ color: isActive ? "#61dafb" : "#fff" })}>Products</NavLink></li>
+        <li><NavLink to="/admin/orders" style={({ isActive }) => ({ color: isActive ? "#61dafb" : "#fff" })}>Orders</NavLink></li>
+        <li><NavLink to="/admin/settings" style={({ isActive }) => ({ color: isActive ? "#61dafb" : "#fff" })}>Settings</NavLink></li>
       </ul>
     </nav>
   </aside>

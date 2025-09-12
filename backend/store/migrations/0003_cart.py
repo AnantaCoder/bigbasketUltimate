@@ -21,7 +21,7 @@ class Migration(migrations.Migration):
                 ('created_at', models.DateTimeField(auto_now_add=True)),
                 ('updated_at', models.DateTimeField(auto_now=True)),
                 ('items', models.ManyToManyField(related_name='carts', to='store.item')),
-                ('seller', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='carts', to='accounts.seller')),
+                ('seller', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='carts', to='accounts.seller')),
                 ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='carts', to=settings.AUTH_USER_MODEL)),
             ],
         ),

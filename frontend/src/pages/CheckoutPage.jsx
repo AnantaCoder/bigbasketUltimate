@@ -3,6 +3,7 @@ import { useSelector, useDispatch } from "react-redux";
 import { selectCart, fetchCart, selectCartStatus } from "../app/slices/CartSlice";
 import { toast } from "react-toastify";
 import CheckoutHeader from "../components/CheckoutHeader";
+import StripeCheckout from "../components/StripeCheckout";
 
 function CheckoutPage() {
   const dispatch = useDispatch();
@@ -354,18 +355,26 @@ function CheckoutPage() {
               >
                 Save & Use this location
               </button>
-
-              <button
-                onClick={() => {
-                  // maybe proceed to payment flow — example navigation hook not included
-                  toast.info("Proceed to payment (implement navigation)");
-                }}
-                className="w-full py-2 rounded border border-gray-300"
-              >
-                Proceed to payment
-              </button>
             </div>
           </div>
+
+          {/* Payment Section */}
+          {selectedPlace && (
+            <div className="pt-4 border-t">
+              <h3 className="font-semibold text-gray-700 mb-4">Payment</h3>
+              <StripeCheckout
+                amount={totalAmountPayable / 83.5} // Convert INR to USD (approx rate)
+                onSuccess={(paymentIntent) => {
+                  toast.success("Payment successful!");
+                  console.log("Payment Intent:", paymentIntent);
+                  // Here you can handle post-payment logic like creating order, etc.
+                }}
+                onError={(error) => {
+                  toast.error("Payment failed: " + error);
+                }}
+              />
+            </div>
+          )}
         </aside>
       </main>
     </div>
