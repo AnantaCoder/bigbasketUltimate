@@ -1,6 +1,10 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { selectCart, fetchCart, selectCartStatus } from "../app/slices/CartSlice";
+import {
+  selectCart,
+  fetchCart,
+  selectCartStatus,
+} from "../app/slices/CartSlice";
 import { toast } from "react-toastify";
 import CheckoutHeader from "../components/CheckoutHeader";
 import StripeCheckout from "../components/StripeCheckout";
@@ -9,8 +13,8 @@ function CheckoutPage() {
   const dispatch = useDispatch();
   const cart = useSelector(selectCart);
   const status = useSelector(selectCartStatus);
-  const authToken = useSelector((s) => s.auth?.token); 
-  const user = useSelector((s) => s.auth?.user);
+  const authToken = useSelector((s) => s.auth?.token);
+  const user = useSelector((s) => s.auth?.user); // eslint-disable-line no-unused-vars
 
   useEffect(() => {
     if (status === "idle") {
@@ -22,7 +26,10 @@ function CheckoutPage() {
     cart && cart.total_price !== undefined
       ? cart.total_price
       : cart && cart.items
-      ? cart.items.reduce((acc, item) => acc + item.price * (item.quantity || 1), 0)
+      ? cart.items.reduce(
+          (acc, item) => acc + item.price * (item.quantity || 1),
+          0
+        )
       : 0;
 
   const totalSavings = 0;
@@ -31,11 +38,12 @@ function CheckoutPage() {
   const [query, setQuery] = useState("");
   const [suggestions, setSuggestions] = useState([]);
   const [suggestLoading, setSuggestLoading] = useState(false);
-  const [selectedPlace, setSelectedPlace] = useState(null); 
+  const [selectedPlace, setSelectedPlace] = useState(null);
   const [mapSrc, setMapSrc] = useState(
     "https://www.openstreetmap.org/export/embed.html?bbox=77.5,12.9,77.65,12.98&layer=mapnik"
   );
   const [reverseLoading, setReverseLoading] = useState(false);
+  const [orderUserId, setOrderUserId] = useState(null);
 
   // debouncing
   const debounceRef = useRef(null);
@@ -51,42 +59,49 @@ function CheckoutPage() {
     if (props.city) parts.push(props.city);
     if (props.state && !parts.includes(props.state)) parts.push(props.state);
     if (props.country) parts.push(props.country);
-    return parts.join(", ") || props.street || props.county || props.country || "(unnamed)";
+    return (
+      parts.join(", ") ||
+      props.street ||
+      props.county ||
+      props.country ||
+      "(unnamed)"
+    );
   };
 
   // fetch suggestions from Photon
-  const fetchSuggestions = useCallback(
-    async (q) => {
-      if (!q || q.length < 2) {
-        setSuggestions([]);
-        return;
-      }
-      setSuggestLoading(true);
-      try {
-        const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=8`;
-        const res = await fetch(url);
-        if (!res.ok) throw new Error("Photon search failed");
-        const data = await res.json();
-        const items = (data.features || []).map((f) => {
-          const [lon, lat] = f.geometry?.coordinates || [null, null];
-          return {
-            id: f.properties.osm_id ? `${f.properties.osm_type}_${f.properties.osm_id}` : f.properties.osm_id || Math.random().toString(36).slice(2),
-            lat,
-            lon,
-            display_name: buildDisplayName(f.properties),
-            properties: f.properties,
-          };
-        });
-        setSuggestions(items);
-      } catch (err) {
-        console.error(err);
-        toast.error("Failed to fetch suggestions — try again later.");
-      } finally {
-        setSuggestLoading(false);
-      }
-    },
-    []
-  );
+  const fetchSuggestions = useCallback(async (q) => {
+    if (!q || q.length < 2) {
+      setSuggestions([]);
+      return;
+    }
+    setSuggestLoading(true);
+    try {
+      const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(
+        q
+      )}&limit=8`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("Photon search failed");
+      const data = await res.json();
+      const items = (data.features || []).map((f) => {
+        const [lon, lat] = f.geometry?.coordinates || [null, null];
+        return {
+          id: f.properties.osm_id
+            ? `${f.properties.osm_type}_${f.properties.osm_id}`
+            : f.properties.osm_id || Math.random().toString(36).slice(2),
+          lat,
+          lon,
+          display_name: buildDisplayName(f.properties),
+          properties: f.properties,
+        };
+      });
+      setSuggestions(items);
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to fetch suggestions — try again later.");
+    } finally {
+      setSuggestLoading(false);
+    }
+  }, []);
 
   // debounce queries
   useEffect(() => {
@@ -126,7 +141,9 @@ function CheckoutPage() {
         try {
           const lat = pos.coords.latitude;
           const lon = pos.coords.longitude;
-          const res = await fetch(`https://photon.komoot.io/reverse?lat=${lat}&lon=${lon}`);
+          const res = await fetch(
+            `https://photon.komoot.io/reverse?lat=${lat}&lon=${lon}`
+          );
           if (!res.ok) throw new Error("Reverse geocoding failed");
           const data = await res.json();
           const f = data.features && data.features[0];
@@ -144,8 +161,12 @@ function CheckoutPage() {
           setSelectedPlace(place);
           setQuery(place.display_name);
           const delta = 0.01;
-          const bbox = `${lon - delta},${lat - delta},${lon + delta},${lat + delta}`;
-          setMapSrc(`https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat},${lon}`);
+          const bbox = `${lon - delta},${lat - delta},${lon + delta},${
+            lat + delta
+          }`;
+          setMapSrc(
+            `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat},${lon}`
+          );
         } catch (err) {
           console.error(err);
           toast.error("Failed to reverse geocode current location.");
@@ -155,13 +176,15 @@ function CheckoutPage() {
       },
       (err) => {
         console.error(err);
-        toast.error("Unable to get current location. Permission denied or unavailable.");
+        toast.error(
+          "Unable to get current location. Permission denied or unavailable."
+        );
         setReverseLoading(false);
       }
     );
   };
 
-  // send selected location to backend (example)
+  // send selected location to backend (create order_user)
   const sendLocation = async () => {
     if (!selectedPlace) {
       toast.error("Select a location first.");
@@ -169,15 +192,13 @@ function CheckoutPage() {
     }
 
     const payload = {
-      display_name: selectedPlace.display_name,
-      lat: selectedPlace.lat,
-      lon: selectedPlace.lon,
-      properties: selectedPlace.properties,
-      user_id: user?.id || null,
+      phone_no: "1234567890", // placeholder, should be from form
+      address: selectedPlace.display_name,
+      city: selectedPlace.properties?.city || "Unknown",
     };
 
     try {
-      const res = await fetch("/api/addresses/", {
+      const res = await fetch("http://127.0.0.1:8000/api/store/order-users/", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -188,20 +209,21 @@ function CheckoutPage() {
 
       if (!res.ok) {
         const errBody = await res.json().catch(() => ({}));
-        throw new Error(errBody.message || "Server rejected address");
+        throw new Error(errBody.detail || "Server rejected address");
       }
 
       const respData = await res.json().catch(() => ({}));
-      toast.success("Location saved successfully.");
+      toast.success("Address saved successfully.");
+      setOrderUserId(respData.id);
     } catch (err) {
       console.error(err);
-      toast.error("Failed to save location. Check your backend or network.");
+      toast.error("Failed to save address. Check your backend or network.");
     }
   };
 
   return (
     <div className="min-h-screen bg-gray-100">
-      <CheckoutHeader/>
+      <CheckoutHeader />
 
       {/* Main Content */}
       <main className="max-w-6xl mx-auto p-6 flex space-x-6">
@@ -211,7 +233,9 @@ function CheckoutPage() {
 
           {/* Search box */}
           <div className="mb-4">
-            <label className="text-sm font-medium text-gray-700">Search address</label>
+            <label className="text-sm font-medium text-gray-700">
+              Search address
+            </label>
             <div className="relative mt-1">
               <input
                 type="search"
@@ -221,7 +245,9 @@ function CheckoutPage() {
                 className="w-full border px-3 py-2 rounded shadow-sm focus:outline-none focus:ring-2 focus:ring-green-400"
               />
               {suggestLoading && (
-                <div className="absolute right-3 top-2 text-sm text-gray-500">Loading…</div>
+                <div className="absolute right-3 top-2 text-sm text-gray-500">
+                  Loading…
+                </div>
               )}
 
               {suggestions.length > 0 && (
@@ -263,7 +289,9 @@ function CheckoutPage() {
                 title="Detect my location"
               >
                 <span className="material-icons">my_location</span>
-                <span>{reverseLoading ? "Detecting..." : "Get current location"}</span>
+                <span>
+                  {reverseLoading ? "Detecting..." : "Get current location"}
+                </span>
               </button>
               <button
                 onClick={() => {
@@ -271,7 +299,9 @@ function CheckoutPage() {
                   setSelectedPlace(null);
                   setQuery("");
                   setSuggestions([]);
-                  setMapSrc("https://www.openstreetmap.org/export/embed.html?bbox=77.5,12.9,77.65,12.98&layer=mapnik");
+                  setMapSrc(
+                    "https://www.openstreetmap.org/export/embed.html?bbox=77.5,12.9,77.65,12.98&layer=mapnik"
+                  );
                 }}
                 className="bg-white text-black px-3 py-2 rounded shadow"
               >
@@ -284,19 +314,28 @@ function CheckoutPage() {
               <div>
                 <div className="font-semibold">Delivery Location</div>
                 <div className="text-sm">
-                  {selectedPlace ? selectedPlace.display_name : "No location selected"}
+                  {selectedPlace
+                    ? selectedPlace.display_name
+                    : "No location selected"}
                 </div>
               </div>
               <button
                 onClick={() => {
                   if (!selectedPlace) {
-                    toast.info("Select a location first (from search or get current location).");
+                    toast.info(
+                      "Select a location first (from search or get current location)."
+                    );
                     return;
                   }
                   // copy to clipboard as convenience
-                  navigator.clipboard?.writeText(selectedPlace.display_name).then(() => {
-                    toast.success("Address copied to clipboard");
-                  }, () => {});
+                  navigator.clipboard
+                    ?.writeText(selectedPlace.display_name)
+                    .then(
+                      () => {
+                        toast.success("Address copied to clipboard");
+                      },
+                      () => {}
+                    );
                 }}
                 className="bg-red-600 px-4 py-2 rounded text-white font-semibold hover:bg-red-700"
               >
@@ -318,29 +357,40 @@ function CheckoutPage() {
           </div>
 
           <div className="bg-yellow-100 border border-yellow-400 p-3 rounded text-sm">
-            Select your address and delivery slot to know accurate delivery charges. You can save more by applying a voucher!
+            Select your address and delivery slot to know accurate delivery
+            charges. You can save more by applying a voucher!
           </div>
 
           <div className="pt-2 border-t">
             <h3 className="font-semibold text-gray-700">Selected Location</h3>
             {!selectedPlace ? (
-              <p className="text-gray-500 text-sm mt-2">No place selected yet.</p>
+              <p className="text-gray-500 text-sm mt-2">
+                No place selected yet.
+              </p>
             ) : (
               <div className="mt-2 space-y-2 text-sm text-gray-800">
-                <div className="font-semibold">{selectedPlace.display_name}</div>
-                <div>
-                  <span className="font-medium">Latitude:</span> {selectedPlace.lat}
+                <div className="font-semibold">
+                  {selectedPlace.display_name}
                 </div>
                 <div>
-                  <span className="font-medium">Longitude:</span> {selectedPlace.lon}
+                  <span className="font-medium">Latitude:</span>{" "}
+                  {selectedPlace.lat}
+                </div>
+                <div>
+                  <span className="font-medium">Longitude:</span>{" "}
+                  {selectedPlace.lon}
                 </div>
                 {selectedPlace.properties && (
                   <div className="text-xs text-gray-600">
                     {selectedPlace.properties.street && (
                       <div>Street: {selectedPlace.properties.street}</div>
                     )}
-                    {selectedPlace.properties.city && <div>City: {selectedPlace.properties.city}</div>}
-                    {selectedPlace.properties.country && <div>Country: {selectedPlace.properties.country}</div>}
+                    {selectedPlace.properties.city && (
+                      <div>City: {selectedPlace.properties.city}</div>
+                    )}
+                    {selectedPlace.properties.country && (
+                      <div>Country: {selectedPlace.properties.country}</div>
+                    )}
                   </div>
                 )}
               </div>
@@ -351,7 +401,11 @@ function CheckoutPage() {
               <button
                 onClick={sendLocation}
                 disabled={!selectedPlace}
-                className={`w-full py-2 rounded font-semibold ${selectedPlace ? "bg-green-600 hover:bg-green-700 text-white" : "bg-gray-200 text-gray-500 cursor-not-allowed"}`}
+                className={`w-full py-2 rounded font-semibold ${
+                  selectedPlace
+                    ? "bg-green-600 hover:bg-green-700 text-white"
+                    : "bg-gray-200 text-gray-500 cursor-not-allowed"
+                }`}
               >
                 Save & Use this location
               </button>

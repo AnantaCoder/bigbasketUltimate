@@ -13,13 +13,21 @@ supabase_client: Client = None
 SUPABASE_BUCKET_NAME = None
 
 try:
-    if settings.SUPABASE_URL and settings.SUPABASE_KEY and settings.SUPABASE_BUCKET_NAME:
+    if (
+        settings.SUPABASE_URL
+        and settings.SUPABASE_KEY
+        and settings.SUPABASE_BUCKET_NAME
+    ):
         supabase_client = create_client(settings.SUPABASE_URL, settings.SUPABASE_KEY)
         SUPABASE_BUCKET_NAME = settings.SUPABASE_BUCKET_NAME
     else:
-        print("Supabase settings (URL, Key, or Bucket Name) are not fully configured in settings.py.")
+        print(
+            "Supabase settings (URL, Key, or Bucket Name) are not fully configured in settings.py."
+        )
 except AttributeError as e:
-    print(f"Warning: Supabase settings not fully loaded. Ensure .env and settings.py are correct. Error: {e}")
+    print(
+        f"Warning: Supabase settings not fully loaded. Ensure .env and settings.py are correct. Error: {e}"
+    )
 except Exception as e:
     print(f"Error initializing Supabase client: {e}")
 
@@ -33,10 +41,12 @@ class RecursiveField(serializers.Serializer):
         depth = self.context.get("depth", 1)
 
         # prevent infinite nesting
-        if depth > 2:   # ⬅️ limit recursion depth here
+        if depth > 2:  # ⬅️ limit recursion depth here
             return None
 
-        serializer = parent_serializer(value, context={**self.context, "depth": depth + 1})
+        serializer = parent_serializer(
+            value, context={**self.context, "depth": depth + 1}
+        )
         return serializer.data
 
 
@@ -56,12 +66,12 @@ class CategorySerializer(serializers.ModelSerializer):
             "created_at",
             "discount",
             "image",
-            "referral_image",   # make sure this exists in your model
+            "referral_image",  # make sure this exists in your model
             "icon",
             "color",
             "popular_brands",
-            "parent",           # parent category
-            "subcategories",    # recursive children
+            "parent",  # parent category
+            "subcategories",  # recursive children
         ]
 
 
@@ -76,20 +86,18 @@ class ItemSerializer(serializers.ModelSerializer):
         source="category",
         write_only=True,
         required=False,
-        allow_null=True
+        allow_null=True,
     )
 
     image = serializers.ListField(
         child=serializers.ImageField(),
         allow_empty=True,
         required=False,
-        write_only=True
+        write_only=True,
     )
 
     image_urls = serializers.ListField(
-        child=serializers.URLField(),
-        allow_empty=True,
-        read_only=True
+        child=serializers.URLField(), allow_empty=True, read_only=True
     )
 
     class Meta:
@@ -114,10 +122,17 @@ class ItemSerializer(serializers.ModelSerializer):
             "updated_at",
             "is_in_stock",
         ]
-        read_only_fields = ["id", "seller", "created_at", "updated_at", "is_in_stock", "image_urls"]
+        read_only_fields = [
+            "id",
+            "seller",
+            "created_at",
+            "updated_at",
+            "is_in_stock",
+            "image_urls",
+        ]
 
     def create(self, validated_data):
-        user = self.context['request'].user
+        user = self.context["request"].user
         if not hasattr(user, "seller"):
             raise serializers.ValidationError("Only sellers can create items")
 
@@ -134,21 +149,20 @@ class ItemSerializer(serializers.ModelSerializer):
 
                 try:
                     supabase_client.storage.from_(SUPABASE_BUCKET_NAME).upload(
-                        unique_filename,
-                        img.read(),
-                        {"content-type": img.content_type}
+                        unique_filename, img.read(), {"content-type": img.content_type}
                     )
-                    public_url = supabase_client.storage.from_(SUPABASE_BUCKET_NAME).get_public_url(unique_filename)
+                    public_url = supabase_client.storage.from_(
+                        SUPABASE_BUCKET_NAME
+                    ).get_public_url(unique_filename)
                     if public_url:
                         uploaded_image_urls.append(public_url)
                 except Exception as e:
-                    raise serializers.ValidationError(f"Image upload failed for {img.name}: {e}")
+                    raise serializers.ValidationError(
+                        f"Image upload failed for {img.name}: {e}"
+                    )
 
         # create item
-        item = Item.objects.create(
-            seller=user.seller,
-            **validated_data
-        )
+        item = Item.objects.create(seller=user.seller, **validated_data)
 
         # save Supabase image URLs if model has field
         if hasattr(item, "image_urls"):
@@ -164,22 +178,20 @@ class ItemSerializer(serializers.ModelSerializer):
 class CartItemSerializer(serializers.ModelSerializer):
     item = ItemSerializer(read_only=True)
     item_id = serializers.PrimaryKeyRelatedField(
-        queryset=Item.objects.all(),
-        source='item',
-        write_only=True
+        queryset=Item.objects.all(), source="item", write_only=True
     )
     total_price = serializers.SerializerMethodField()
 
     class Meta:
         model = CartItem
         fields = [
-            'id',
-            'item',
-            'item_id',
-            'quantity',
-            'total_price',
+            "id",
+            "item",
+            "item_id",
+            "quantity",
+            "total_price",
         ]
-        read_only_fields = ['id', 'item', 'total_price']
+        read_only_fields = ["id", "item", "total_price"]
 
     def get_total_price(self, obj):
         return obj.quantity * obj.item.price
@@ -196,30 +208,34 @@ class CartSerializer(serializers.ModelSerializer):
 
     # For adding items - expect item_ids and optional quantities
     item_ids = serializers.ListField(
-        child=serializers.IntegerField(),
-        write_only=True,
-        required=False
+        child=serializers.IntegerField(), write_only=True, required=False
     )
     quantities = serializers.ListField(
-        child=serializers.IntegerField(min_value=1),
-        write_only=True,
-        required=False
+        child=serializers.IntegerField(min_value=1), write_only=True, required=False
     )
 
     class Meta:
         model = Cart
         fields = [
-            'id',
-            'user',
-            'seller',
-            'cart_items',
-            'item_ids',
-            'quantities',
-            'created_at',
-            'updated_at',
-            'total_price',
+            "id",
+            "user",
+            "seller",
+            "cart_items",
+            "item_ids",
+            "quantities",
+            "created_at",
+            "updated_at",
+            "total_price",
         ]
-        read_only_fields = ['id', 'user', 'seller', 'cart_items', 'created_at', 'updated_at', 'total_price']
+        read_only_fields = [
+            "id",
+            "user",
+            "seller",
+            "cart_items",
+            "created_at",
+            "updated_at",
+            "total_price",
+        ]
 
     def get_total_price(self, obj):
         return sum(cart_item.total_price for cart_item in obj.cart_items.all())
@@ -233,8 +249,16 @@ class OrderUserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = OrderUser
-        fields = ['id', 'user', 'phone_no', 'address', 'city', 'created_at', 'updated_at']
-        read_only_fields = ['id', 'user', 'created_at', 'updated_at']
+        fields = [
+            "id",
+            "user",
+            "phone_no",
+            "address",
+            "city",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ["id", "user", "created_at", "updated_at"]
 
 
 # ==============================
@@ -244,15 +268,35 @@ class OrderItemSerializer(serializers.ModelSerializer):
     seller = serializers.StringRelatedField(read_only=True)
     original_item = ItemSerializer(read_only=True)
     original_item_id = serializers.PrimaryKeyRelatedField(
-        queryset=Item.objects.all(),
-        source='original_item',
-        write_only=True
+        queryset=Item.objects.all(), source="original_item", write_only=True
     )
+    total_price = serializers.SerializerMethodField()
 
     class Meta:
         model = OrderItem
-        fields = ['id', 'item_name', 'price', 'seller', 'original_item', 'original_item_id', 'created_at', 'updated_at']
-        read_only_fields = ['id', 'created_at', 'updated_at', 'seller', 'original_item']
+        fields = [
+            "id",
+            "item_name",
+            "price",
+            "quantity",
+            "total_price",
+            "seller",
+            "original_item",
+            "original_item_id",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = [
+            "id",
+            "created_at",
+            "updated_at",
+            "seller",
+            "original_item",
+            "total_price",
+        ]
+
+    def get_total_price(self, obj):
+        return obj.total_price
 
 
 # ==============================
@@ -261,30 +305,34 @@ class OrderItemSerializer(serializers.ModelSerializer):
 class OrderSerializer(serializers.ModelSerializer):
     order_user = OrderUserSerializer(read_only=True)
     order_user_id = serializers.PrimaryKeyRelatedField(
-        queryset=OrderUser.objects.all(),
-        source='order_user',
-        write_only=True
+        queryset=OrderUser.objects.all(), source="order_user", write_only=True
     )
     order_items = OrderItemSerializer(many=True, read_only=True)
     order_item_ids = serializers.PrimaryKeyRelatedField(
         queryset=OrderItem.objects.all(),
         many=True,
-        source='order_items',
-        write_only=True
+        source="order_items",
+        write_only=True,
     )
 
     class Meta:
         model = Order
         fields = [
-            'id',
-            'status',
-            'buyer_email',
-            'total_amount',
-            'order_user',
-            'order_user_id',
-            'order_items',
-            'order_item_ids',
-            'created_at',
-            'updated_at'
+            "id",
+            "status",
+            "buyer_email",
+            "total_amount",
+            "order_user",
+            "order_user_id",
+            "order_items",
+            "order_item_ids",
+            "created_at",
+            "updated_at",
         ]
-        read_only_fields = ['id', 'created_at', 'updated_at', 'order_user', 'order_items']
+        read_only_fields = [
+            "id",
+            "created_at",
+            "updated_at",
+            "order_user",
+            "order_items",
+        ]

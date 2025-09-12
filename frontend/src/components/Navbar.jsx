@@ -273,7 +273,9 @@ function Navbar() {
                 aria-label="Toggle cart dropdown"
               >
                 <BasketIcon />
-                <div className="ml-3 text-sm hidden xl:block">
+                <div
+                onClick={()=>navigate('/cart')}
+                className="ml-3 text-sm hidden xl:block">
                   <div className="font-bold text-gray-800 group-hover:text-emerald-700">
                     My Basket
                   </div>
@@ -286,7 +288,7 @@ function Navbar() {
                 </span>
               </div>
 
-              {isCartOpen && <CartDropdown onClose={() => setIsCartOpen(false)} />}
+              {/* {isCartOpen && <CartDropdown onClose={() => setIsCartOpen(false)} />} */}
 
               {/* Shop by Category */}
               {/* Removed the Shop by Category button on the right side beside My Basket as per user request */}

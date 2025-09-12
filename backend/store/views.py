@@ -186,7 +186,9 @@ class CartItemAPIView(APIView):
                 # Validate item_ids and quantities length
                 if quantities and len(quantities) != len(item_ids):
                     return Response(
-                        {"detail": "Length of quantities must match length of item_ids."},
+                        {
+                            "detail": "Length of quantities must match length of item_ids."
+                        },
                         status=status.HTTP_400_BAD_REQUEST,
                     )
                 # Create or update CartItem instances
@@ -198,16 +200,21 @@ class CartItemAPIView(APIView):
                             {"detail": f"Item with id {item_id} not found."},
                             status=status.HTTP_404_NOT_FOUND,
                         )
-                    cart_item, created = CartItem.objects.get_or_create(cart=cart, item=item)
+                    cart_item, created = CartItem.objects.get_or_create(
+                        cart=cart, item=item
+                    )
                     cart_item.quantity = quantity
                     cart_item.save()
                 serializer = CartSerializer(cart)
                 return Response(serializer.data, status=status.HTTP_200_OK)
             return Response(
-                {"detail": "No item_ids provided.", "received_data": request.data}, status=status.HTTP_400_BAD_REQUEST
+                {"detail": "No item_ids provided.", "received_data": request.data},
+                status=status.HTTP_400_BAD_REQUEST,
             )
         except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response(
+                {"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
     def delete(self, request, format=None):
         user = request.user
@@ -249,7 +256,8 @@ class CartItemAPIView(APIView):
         quantity = request.data.get("quantity")
         if not item_id or quantity is None:
             return Response(
-                {"detail": "item_id and quantity are required."}, status=status.HTTP_400_BAD_REQUEST
+                {"detail": "item_id and quantity are required."},
+                status=status.HTTP_400_BAD_REQUEST,
             )
         try:
             cart_item = CartItem.objects.get(cart=cart, item_id=item_id)
@@ -262,7 +270,9 @@ class CartItemAPIView(APIView):
                 {"detail": "Item not found in cart."}, status=status.HTTP_404_NOT_FOUND
             )
         except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response(
+                {"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 
 # OrderUser CRUD
@@ -315,6 +325,74 @@ class OrderRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Order.objects.all()
     serializer_class = OrderSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+
+class CheckoutAPIView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, format=None):
+        user = request.user
+        if hasattr(user, "seller"):
+            return Response(
+                {"detail": "Sellers cannot place orders."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        cart = Cart.objects.filter(user=user, seller=None).first()
+        if not cart or not cart.cart_items.exists():
+            return Response(
+                {"detail": "Cart is empty."}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        order_user_id = request.data.get("order_user_id")
+        if not order_user_id:
+            return Response(
+                {"detail": "order_user_id is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            order_user = OrderUser.objects.get(id=order_user_id, user=user)
+        except OrderUser.DoesNotExist:
+            return Response(
+                {"detail": "Invalid order_user_id."}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Create OrderItems from CartItems
+        order_items = []
+        total_amount = 0
+        for cart_item in cart.cart_items.all():
+            if cart_item.quantity > cart_item.item.quantity:
+                return Response(
+                    {"detail": f"Insufficient stock for {cart_item.item.item_name}."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            order_item = OrderItem.objects.create(
+                item_name=cart_item.item.item_name,
+                price=cart_item.item.price,
+                quantity=cart_item.quantity,
+                seller=cart_item.item.seller,
+                original_item=cart_item.item,
+            )
+            order_items.append(order_item)
+            total_amount += order_item.total_price
+
+            # Reduce inventory
+            cart_item.item.quantity -= cart_item.quantity
+            cart_item.item.save()
+
+        # Create Order
+        order = Order.objects.create(
+            buyer_email=user.email, total_amount=total_amount, order_user=order_user
+        )
+        order.order_items.set(order_items)
+
+        # Clear cart
+        cart.cart_items.all().delete()
+
+        serializer = OrderSerializer(order)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
 class SearchAddressAPIView(APIView):
