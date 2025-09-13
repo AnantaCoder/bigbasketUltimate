@@ -20,6 +20,7 @@ import SavedPayments from "./pages/SavedPayments";
 import SellerAuthPage from "./pages/SellerLoginPage";
 import ManageItems from "./pages/ManageItems";
 import AdminRoutes from "./admin/adminRoutes";
+import SellerRoutes from "./seller/sellerRoutes";
 import AdminLogin from "./pages/AdminLogin";
 
 function App() {
@@ -48,10 +49,10 @@ function App() {
         </Route>
 
         <Route path="/seller" element={<SellerAuthPage />} />
+        <Route path="/seller/*" element={<SellerRoutes />} />
         <Route path="/admin/login" element={<AdminLogin />} />
         <Route path="/admin/*" element={<AdminRoutes />} />
         <Route path="/checkout" element={<CheckoutPage />} />
-
       </Routes>
     </BrowserRouter>
   );

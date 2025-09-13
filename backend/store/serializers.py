@@ -255,10 +255,24 @@ class OrderUserSerializer(serializers.ModelSerializer):
             "phone_no",
             "address",
             "city",
+            "state",
+            "pincode",
             "created_at",
             "updated_at",
         ]
         read_only_fields = ["id", "user", "created_at", "updated_at"]
+
+    def validate_phone_no(self, value):
+        if not value.isdigit():
+            raise serializers.ValidationError("Phone number must contain only digits.")
+        if len(value) < 10 or len(value) > 15:
+            raise serializers.ValidationError("Phone number must be between 10 and 15 digits.")
+        return value
+
+    def validate_pincode(self, value):
+        if value and (not value.isdigit() or len(value) != 6):
+            raise serializers.ValidationError("Pincode must be 6 digits.")
+        return value
 
 
 # ==============================
@@ -326,8 +340,13 @@ class OrderSerializer(serializers.ModelSerializer):
             "order_user_id",
             "order_items",
             "order_item_ids",
+            "tracking_number",
+            "estimated_delivery",
+            "shipped_at",
+            "delivered_at",
             "created_at",
             "updated_at",
+            "is_active",
         ]
         read_only_fields = [
             "id",
@@ -335,4 +354,7 @@ class OrderSerializer(serializers.ModelSerializer):
             "updated_at",
             "order_user",
             "order_items",
+            "shipped_at",
+            "delivered_at",
+            "is_active",
         ]

@@ -188,7 +188,7 @@ const CartPage = () => {
       </div>
 
       {/* Sticky Checkout Summary */}
-      {showStickyBar && (
+      
         <div className="fixed bottom-0 left-0 w-full bg-white border-t shadow-xl px-4 py-4 z-50">
           <div className="max-w-4xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="flex flex-col md:flex-row gap-4 w-full md:items-center justify-between">
@@ -207,7 +207,7 @@ const CartPage = () => {
             </button>
           </div>
         </div>
-      )}
+      
 
       {/* Footer reference to hide sticky bar when in view */}
       <div ref={footerRef} className="h-40 bg-gray-100 mt-10"></div>

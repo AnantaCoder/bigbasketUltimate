@@ -7,13 +7,13 @@ import {
 } from "../app/slices/CartSlice";
 import { toast } from "react-toastify";
 import CheckoutHeader from "../components/CheckoutHeader";
-import StripeCheckout from "../components/StripeCheckout";
+import RazorpayCheckout from "../components/RazorpayCheckout";
 
 function CheckoutPage() {
   const dispatch = useDispatch();
   const cart = useSelector(selectCart);
   const status = useSelector(selectCartStatus);
-  const authToken = useSelector((s) => s.auth?.token);
+  const authToken = useSelector((s) => s.auth?.accessToken);
   const user = useSelector((s) => s.auth?.user); // eslint-disable-line no-unused-vars
 
   useEffect(() => {
@@ -44,6 +44,16 @@ function CheckoutPage() {
   );
   const [reverseLoading, setReverseLoading] = useState(false);
   const [orderUserId, setOrderUserId] = useState(null);
+  const [orderId, setOrderId] = useState(null);
+
+  // Address form state
+  const [addressForm, setAddressForm] = useState({
+    phone_no: "",
+    address: "",
+    city: "",
+    state: "",
+    pincode: "",
+  });
 
   // debouncing
   const debounceRef = useRef(null);
@@ -120,6 +130,15 @@ function CheckoutPage() {
     setSuggestions([]);
     setQuery(place.display_name);
 
+    // populate form fields
+    setAddressForm({
+      phone_no: addressForm.phone_no, // keep existing
+      address: place.display_name,
+      city: place.properties?.city || "",
+      state: place.properties?.state || "",
+      pincode: "", // photon may not have pincode
+    });
+
     // compute bbox ~ small box around point
     const lat = Number(place.lat);
     const lon = Number(place.lon);
@@ -160,6 +179,16 @@ function CheckoutPage() {
           };
           setSelectedPlace(place);
           setQuery(place.display_name);
+
+          // populate form fields
+          setAddressForm({
+            phone_no: addressForm.phone_no, // keep existing
+            address: place.display_name,
+            city: f.properties?.city || "",
+            state: f.properties?.state || "",
+            pincode: "", // photon may not have pincode
+          });
+
           const delta = 0.01;
           const bbox = `${lon - delta},${lat - delta},${lon + delta},${
             lat + delta
@@ -186,15 +215,17 @@ function CheckoutPage() {
 
   // send selected location to backend (create order_user)
   const sendLocation = async () => {
-    if (!selectedPlace) {
-      toast.error("Select a location first.");
+    if (!addressForm.phone_no || !addressForm.address || !addressForm.city) {
+      toast.error("Please fill in all required fields: Phone, Address, City.");
       return;
     }
 
     const payload = {
-      phone_no: "1234567890", // placeholder, should be from form
-      address: selectedPlace.display_name,
-      city: selectedPlace.properties?.city || "Unknown",
+      phone_no: addressForm.phone_no,
+      address: addressForm.address,
+      city: addressForm.city,
+      state: addressForm.state,
+      pincode: addressForm.pincode,
     };
 
     try {
@@ -218,6 +249,37 @@ function CheckoutPage() {
     } catch (err) {
       console.error(err);
       toast.error("Failed to save address. Check your backend or network.");
+    }
+  };
+
+  // create order after address is saved
+  const createOrder = async () => {
+    if (!orderUserId) {
+      toast.error("Please save address first.");
+      return;
+    }
+
+    try {
+      const res = await fetch("http://127.0.0.1:8000/api/store/checkout/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+        },
+        body: JSON.stringify({ order_user_id: orderUserId }),
+      });
+
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({}));
+        throw new Error(errBody.detail || "Failed to create order");
+      }
+
+      const respData = await res.json().catch(() => ({}));
+      toast.success("Order created successfully.");
+      setOrderId(respData.id);
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to create order. Check your backend or network.");
     }
   };
 
@@ -343,6 +405,85 @@ function CheckoutPage() {
               </button>
             </div>
           </div>
+
+          {/* Address Form */}
+          <div className="mt-6 space-y-4">
+            <h3 className="text-lg font-semibold">Address Details</h3>
+            <div className="grid grid-cols-1 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Phone Number
+                </label>
+                <input
+                  type="tel"
+                  value={addressForm.phone_no}
+                  onChange={(e) =>
+                    setAddressForm({ ...addressForm, phone_no: e.target.value })
+                  }
+                  placeholder="Enter phone number"
+                  className="mt-1 w-full border px-3 py-2 rounded shadow-sm focus:outline-none focus:ring-2 focus:ring-green-400"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Address
+                </label>
+                <textarea
+                  value={addressForm.address}
+                  onChange={(e) =>
+                    setAddressForm({ ...addressForm, address: e.target.value })
+                  }
+                  placeholder="Enter full address"
+                  rows={3}
+                  className="mt-1 w-full border px-3 py-2 rounded shadow-sm focus:outline-none focus:ring-2 focus:ring-green-400"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    City
+                  </label>
+                  <input
+                    type="text"
+                    value={addressForm.city}
+                    onChange={(e) =>
+                      setAddressForm({ ...addressForm, city: e.target.value })
+                    }
+                    placeholder="Enter city"
+                    className="mt-1 w-full border px-3 py-2 rounded shadow-sm focus:outline-none focus:ring-2 focus:ring-green-400"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">
+                    State
+                  </label>
+                  <input
+                    type="text"
+                    value={addressForm.state}
+                    onChange={(e) =>
+                      setAddressForm({ ...addressForm, state: e.target.value })
+                    }
+                    placeholder="Enter state"
+                    className="mt-1 w-full border px-3 py-2 rounded shadow-sm focus:outline-none focus:ring-2 focus:ring-green-400"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Pincode
+                </label>
+                <input
+                  type="text"
+                  value={addressForm.pincode}
+                  onChange={(e) =>
+                    setAddressForm({ ...addressForm, pincode: e.target.value })
+                  }
+                  placeholder="Enter pincode"
+                  className="mt-1 w-full border px-3 py-2 rounded shadow-sm focus:outline-none focus:ring-2 focus:ring-green-400"
+                />
+              </div>
+            </div>
+          </div>
         </section>
 
         <aside className="w-96 bg-white rounded shadow p-6 flex flex-col space-y-4">
@@ -400,28 +541,43 @@ function CheckoutPage() {
             <div className="mt-4 flex flex-col gap-2">
               <button
                 onClick={sendLocation}
-                disabled={!selectedPlace}
+                disabled={
+                  !addressForm.phone_no ||
+                  !addressForm.address ||
+                  !addressForm.city
+                }
                 className={`w-full py-2 rounded font-semibold ${
-                  selectedPlace
+                  addressForm.phone_no &&
+                  addressForm.address &&
+                  addressForm.city
                     ? "bg-green-600 hover:bg-green-700 text-white"
                     : "bg-gray-200 text-gray-500 cursor-not-allowed"
                 }`}
               >
-                Save & Use this location
+                Save Address
               </button>
+              {orderUserId && !orderId && (
+                <button
+                  onClick={createOrder}
+                  className="w-full py-2 rounded font-semibold bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  Create Order
+                </button>
+              )}
             </div>
           </div>
 
           {/* Payment Section */}
-          {selectedPlace && (
+          {orderId && (
             <div className="pt-4 border-t">
               <h3 className="font-semibold text-gray-700 mb-4">Payment</h3>
-              <StripeCheckout
-                amount={totalAmountPayable / 83.5} // Convert INR to USD (approx rate)
-                onSuccess={(paymentIntent) => {
+              <RazorpayCheckout
+                orderId={orderId}
+                amount={totalAmountPayable}
+                onSuccess={(data) => {
                   toast.success("Payment successful!");
-                  console.log("Payment Intent:", paymentIntent);
-                  // Here you can handle post-payment logic like creating order, etc.
+                  console.log("Payment Data:", data);
+                  // Here you can handle post-payment logic like redirecting to order confirmation
                 }}
                 onError={(error) => {
                   toast.error("Payment failed: " + error);

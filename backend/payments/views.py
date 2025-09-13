@@ -41,8 +41,8 @@ class PaymentGatewayLogRetrieveAPIView(generics.RetrieveAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
 
-# 4. Payment Intent (Stripe implementation)
-class PaymentIntentAPIView(views.APIView):
+# 4. Razorpay Order Creation
+class RazorpayOrderAPIView(views.APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
@@ -50,18 +50,18 @@ class PaymentIntentAPIView(views.APIView):
             from django.conf import settings
             from store.models import Order
 
-            # Check if Stripe keys are configured
-            if not settings.STRIPE_SECRET_KEY:
+            # Check if Razorpay keys are configured
+            if not settings.RAZORPAY_KEY_ID or not settings.RAZORPAY_KEY_SECRET:
                 return Response(
                     {
-                        "error": "Stripe is not configured. Please set STRIPE_SECRET_KEY in your environment variables."
+                        "error": "Razorpay is not configured. Please set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in your environment variables."
                     },
                     status=500,
                 )
 
-            import stripe
+            import razorpay
 
-            stripe.api_key = settings.STRIPE_SECRET_KEY
+            client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
 
             data = request.data
             order_id = data.get("order_id")
@@ -73,17 +73,15 @@ class PaymentIntentAPIView(views.APIView):
             except Order.DoesNotExist:
                 return Response({"error": "Order not found."}, status=404)
 
-            amount = int(
-                float(order.total_amount) * 100
-            )  # in cents, assuming INR, but Stripe uses cents
-            currency = data.get("currency", "inr")
+            amount = int(float(order.total_amount) * 100)  # in paisa
+            currency = "INR"
 
-            # Create PaymentIntent
-            intent = stripe.PaymentIntent.create(
-                amount=amount,
-                currency=currency,
-                automatic_payment_methods={"enabled": True},
-            )
+            # Create Razorpay Order
+            razorpay_order = client.order.create({
+                "amount": amount,
+                "currency": currency,
+                "payment_capture": 1,  # Auto capture
+            })
 
             # Create Payment record
             from payments.models import Payment
@@ -94,22 +92,81 @@ class PaymentIntentAPIView(views.APIView):
                     order.order_items.first().seller
                     if order.order_items.exists()
                     else None
-                ),  # assuming single seller for simplicity
+                ),
                 order=order,
                 amount=order.total_amount,
-                currency=currency.upper(),
-                transaction_id=intent.id,
+                currency=currency,
+                transaction_id=razorpay_order["id"],
                 status="pending",
             )
 
-            return Response(
-                {"clientSecret": intent["client_secret"], "payment_id": payment.id}
-            )
+            return Response({
+                "order_id": razorpay_order["id"],
+                "amount": razorpay_order["amount"],
+                "currency": razorpay_order["currency"],
+                "key": settings.RAZORPAY_KEY_ID,
+                "payment_id": payment.id
+            })
         except Exception as e:
             return Response({"error": str(e)}, status=400)
 
 
-# 5. Special Webhook (dummy implementation)
+# 5. Razorpay Payment Verification
+class RazorpayVerifyAPIView(views.APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        try:
+            from django.conf import settings
+            import razorpay
+            import hmac
+            import hashlib
+
+            client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
+
+            data = request.data
+            razorpay_order_id = data.get("razorpay_order_id")
+            razorpay_payment_id = data.get("razorpay_payment_id")
+            razorpay_signature = data.get("razorpay_signature")
+
+            if not all([razorpay_order_id, razorpay_payment_id, razorpay_signature]):
+                return Response({"error": "Missing required fields."}, status=400)
+
+            # Verify signature
+            generated_signature = hmac.new(
+                settings.RAZORPAY_KEY_SECRET.encode(),
+                f"{razorpay_order_id}|{razorpay_payment_id}".encode(),
+                hashlib.sha256
+            ).hexdigest()
+
+            if generated_signature != razorpay_signature:
+                return Response({"error": "Invalid signature."}, status=400)
+
+            # Fetch payment details
+            payment_details = client.payment.fetch(razorpay_payment_id)
+
+            # Update Payment record
+            try:
+                payment = Payment.objects.get(transaction_id=razorpay_order_id)
+                payment.status = "success" if payment_details["status"] == "captured" else "failed"
+                payment.is_success = payment.status == "success"
+                payment.save()
+
+                # Log the gateway response
+                PaymentGatewayLog.objects.create(
+                    payment_id=razorpay_payment_id,
+                    gateway_response=payment_details
+                )
+
+                return Response({"status": payment.status, "payment_id": payment.id})
+            except Payment.DoesNotExist:
+                return Response({"error": "Payment record not found."}, status=404)
+
+        except Exception as e:
+            return Response({"error": str(e)}, status=400)
+
+
+# 6. Special Webhook (dummy implementation)
 class PaymentWebhookAPIView(views.APIView):
     permission_classes = [permissions.AllowAny]
 

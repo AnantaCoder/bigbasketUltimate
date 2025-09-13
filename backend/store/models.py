@@ -115,6 +115,8 @@ class OrderUser(models.Model):
     phone_no = models.CharField(max_length=20)
     address = models.TextField()
     city = models.CharField(max_length=100)
+    state = models.CharField(max_length=100, blank=True, null=True)
+    pincode = models.CharField(max_length=20, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -160,8 +162,16 @@ class Order(models.Model):
         OrderUser, on_delete=models.CASCADE, related_name="orders"
     )
     order_items = models.ManyToManyField(OrderItem, related_name="orders")
+    tracking_number = models.CharField(max_length=100, blank=True, null=True)
+    estimated_delivery = models.DateTimeField(blank=True, null=True)
+    shipped_at = models.DateTimeField(blank=True, null=True)
+    delivered_at = models.DateTimeField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return f"Order {self.id} - {self.status}"
+
+    @property
+    def is_active(self):
+        return self.status in ["pending", "processing", "shipped"]

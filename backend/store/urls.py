@@ -41,5 +41,11 @@ urlpatterns = [
     ),
     path("checkout/", CheckoutAPIView.as_view(), name="checkout"),
     path("search-address/", SearchAddressAPIView.as_view(), name="search-address"),
+    # User order history
+    path("user-orders/", UserOrderListAPIView.as_view(), name="user-orders"),
+    # Seller orders
+    path("seller-orders/", SellerOrderListAPIView.as_view(), name="seller-orders"),
+    # Order update
+    path("orders/<int:pk>/update/", OrderUpdateAPIView.as_view(), name="order-update"),
     path("", include(router.urls)),
 ]

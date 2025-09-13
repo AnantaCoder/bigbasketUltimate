@@ -6,7 +6,7 @@ const Orders = () => {
   const [search, setSearch] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [editOrder, setEditOrder] = useState(null);
-  const [form, setForm] = useState({ status: "", total: "" });
+  const [form, setForm] = useState({ status: "", total_amount: "" });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -15,7 +15,7 @@ const Orders = () => {
     setLoading(true);
     setError("");
     try {
-      const res = await api.get("/store/orders/");
+      const res = await api.get("/store/seller-orders/");
       const data = res.data;
       setOrders(Array.isArray(data) ? data : data.results || []);
     } catch {
@@ -68,23 +68,9 @@ const Orders = () => {
     setLoading(false);
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm("Delete this order?")) {
-      setLoading(true);
-      setError("");
-      try {
-        await api.delete(`/store/orders/${id}/`);
-        fetchOrders();
-      } catch {
-        setError("Failed to delete order");
-      }
-      setLoading(false);
-    }
-  };
-
   return (
     <div>
-      <h2>Order Management</h2>
+      <h2>Seller Order Management</h2>
       <div style={{ marginBottom: 16 }}>
         <input
           type="text"
@@ -126,13 +112,7 @@ const Orders = () => {
                   onClick={() => openEditModal(order)}
                   style={{ marginRight: 8 }}
                 >
-                  Edit
-                </button>
-                <button
-                  onClick={() => handleDelete(order.id)}
-                  style={{ color: "red" }}
-                >
-                  Delete
+                  Update Status
                 </button>
               </td>
             </tr>
@@ -170,7 +150,7 @@ const Orders = () => {
               minWidth: 300,
             }}
           >
-            <h3>Edit Order</h3>
+            <h3>Update Order Status</h3>
             <div style={{ marginBottom: 12 }}>
               <label>Status:</label>
               <br />
@@ -184,18 +164,8 @@ const Orders = () => {
                 <option value="pending">Pending</option>
                 <option value="processing">Processing</option>
                 <option value="shipped">Shipped</option>
+                <option value="delivered">Delivered</option>
               </select>
-            </div>
-            <div style={{ marginBottom: 12 }}>
-              <label>Total Amount:</label>
-              <br />
-              <input
-                name="total_amount"
-                value={form.total_amount}
-                onChange={handleChange}
-                required
-                style={{ width: "100%", padding: 8 }}
-              />
             </div>
             <div style={{ marginBottom: 12 }}>
               <label>Tracking Number:</label>

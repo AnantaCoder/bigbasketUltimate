@@ -405,10 +405,7 @@ class SearchAddressAPIView(APIView):
         # Mock search results for demonstration
         results = [
             {"id": 1, "name": "Bangalore, Karnataka", "pincode": "560001"},
-            {"id": 2, "name": "Bangalore, Karnataka", "pincode": "560002"},
             {"id": 3, "name": "Mysore, Karnataka", "pincode": "570001"},
-            {"id": 4, "name": "Hubli, Karnataka", "pincode": "580001"},
-            {"id": 5, "name": "Mangalore, Karnataka", "pincode": "575001"},
         ]
         filtered_results = [
             r
@@ -416,3 +413,59 @@ class SearchAddressAPIView(APIView):
             if query.lower() in r["name"].lower() or query in r["pincode"]
         ]
         return Response({"results": filtered_results})
+
+
+# User Order History
+class UserOrderListAPIView(generics.ListAPIView):
+    serializer_class = OrderSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        queryset = Order.objects.filter(order_user__user=user)
+        status_filter = self.request.query_params.get("status")
+        if status_filter == "active":
+            queryset = queryset.filter(status__in=["pending", "processing", "shipped"])
+        elif status_filter == "past":
+            queryset = queryset.filter(status__in=["delivered", "cancelled"])
+        return queryset.order_by("-created_at")
+
+
+# Seller Order List
+class SellerOrderListAPIView(generics.ListAPIView):
+    serializer_class = OrderSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        if not hasattr(user, "seller"):
+            return Order.objects.none()
+        # Orders that have items from this seller
+        return Order.objects.filter(order_items__seller=user.seller).distinct().order_by("-created_at")
+
+
+# Order Update (for admin/seller to update status and tracking)
+class OrderUpdateAPIView(generics.RetrieveUpdateAPIView):
+    queryset = Order.objects.all()
+    serializer_class = OrderSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_staff:  # Admin can update all
+            return Order.objects.all()
+        elif hasattr(user, "seller"):  # Seller can update orders with their items
+            return Order.objects.filter(order_items__seller=user.seller).distinct()
+        else:
+            return Order.objects.none()
+
+    def perform_update(self, serializer):
+        instance = serializer.save()
+        # Auto-set timestamps based on status
+        from django.utils import timezone
+        if instance.status == "shipped" and not instance.shipped_at:
+            instance.shipped_at = timezone.now()
+            instance.save()
+        elif instance.status == "delivered" and not instance.delivered_at:
+            instance.delivered_at = timezone.now()
+            instance.save()
