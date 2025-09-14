@@ -2,6 +2,7 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { toast } from "react-toastify";
 import api from "../../services/api";
 
+// Fetch list of items
 export const fetchItems = createAsyncThunk(
   "items/fetchItems",
   async (
@@ -46,28 +47,29 @@ export const fetchItems = createAsyncThunk(
   }
 );
 
+// Fetch single item
 export const fetchItem = createAsyncThunk(
   "items/fetchItem",
   async (id, { rejectWithValue }) => {
     const toastId = toast.loading("Loading item ..", { autoClose: false });
     try {
-      const response = await api.get(`/store/items/${id}/`);
-      toast.update(toastId, {
-        render: "item loaded",
-      });
+      const cleanId = id.toString().trim();
+      const response = await api.get(`/store/items/${cleanId}/`);
+      toast.update(toastId, { render: "Item loaded", type: "success", isLoading: false, autoClose: 2000 });
       return response.data;
     } catch (error) {
       toast.update(toastId, {
-        render:
-          error.response?.data.error ||
-          error.response?.data.detail ||
-          "failed to load item",
+        render: error.response?.data.detail || "Failed to load item",
+        type: "error",
+        isLoading: false,
+        autoClose: 3000,
       });
       return rejectWithValue(error.response?.data || error.message);
     }
   }
 );
 
+// Create item
 export const createItem = createAsyncThunk(
   "items/createItem",
   async (itemData, { rejectWithValue }) => {
@@ -75,8 +77,6 @@ export const createItem = createAsyncThunk(
 
     try {
       const token = localStorage.getItem("access_token");
-
-      // ✅ Always use a new FormData
       const formData = new FormData();
 
       formData.append("item_name", itemData.item_name);
@@ -95,35 +95,20 @@ export const createItem = createAsyncThunk(
         });
       }
 
-      // POST request
       const response = await api.post("/store/new-items/", formData, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "multipart/form-data",
-        },
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "multipart/form-data" },
       });
 
-      toast.update(toastId, {
-        render: "Item created successfully 🎉",
-        type: "success",
-        isLoading: false,
-        autoClose: 3000,
-      });
-
+      toast.update(toastId, { render: "Item created successfully 🎉", type: "success", isLoading: false, autoClose: 3000 });
       return response.data;
     } catch (error) {
-      toast.update(toastId, {
-        render: "Failed to create item ❌",
-        type: "error",
-        isLoading: false,
-        autoClose: 3000,
-      });
-
+      toast.update(toastId, { render: "Failed to create item ❌", type: "error", isLoading: false, autoClose: 3000 });
       return rejectWithValue(error.response?.data || "Something went wrong");
     }
   }
 );
 
+// Update item
 export const updateItem = createAsyncThunk(
   "items/updateItem",
   async (itemData, { rejectWithValue }) => {
@@ -131,68 +116,46 @@ export const updateItem = createAsyncThunk(
 
     try {
       const { id, ...data } = itemData;
-
       const response = await api.put(`/store/items/${id}/`, data);
-      toast.update(toastId, {
-        render: "Item updated ✅",
-        type: "success",
-        isLoading: false,
-        autoClose: 3000,
-      });
+      toast.update(toastId, { render: "Item updated ✅", type: "success", isLoading: false, autoClose: 3000 });
       return response.data;
     } catch (error) {
-      toast.update(toastId, {
-        render:
-          error.response?.data.error ||
-          error.response?.data.detail ||
-          "Failed to update item ❌",
-        type: "error",
-        isLoading: false,
-        autoClose: 3000,
-      });
+      toast.update(toastId, { render: error.response?.data.detail || "Failed to update item ❌", type: "error", isLoading: false, autoClose: 3000 });
       return rejectWithValue(error.response?.data || error.message);
     }
   }
 );
 
+// Delete item
 export const deleteItem = createAsyncThunk(
   "items/deleteItem",
   async (id, { rejectWithValue }) => {
     const toastId = toast.loading("Deleting item ..", { autoClose: false });
     try {
       await api.delete(`/store/items/${id}/`);
-      toast.update(toastId, {
-        render: "item deleted",
-      });
+      toast.update(toastId, { render: "Item deleted", type: "success", isLoading: false, autoClose: 2000 });
       return id;
     } catch (error) {
-      toast.update(toastId, {
-        render:
-          error.response?.data.error ||
-          error.response?.data.detail ||
-          "failed to delete item",
-      });
+      toast.update(toastId, { render: error.response?.data.detail || "Failed to delete item", type: "error", isLoading: false, autoClose: 3000 });
       return rejectWithValue(error.response?.data || error.message);
     }
   }
 );
 
+// Fetch seller items
 export const fetchSellerItems = createAsyncThunk(
   "items/fetchSellerItems",
   async ({ sellerId, page, pageSize = 10 }, { rejectWithValue }) => {
     try {
-      const response = await api.get(
-        `store/new-items/?seller=${sellerId}&page=${page}&page_size=${pageSize}`
-      );
+      const response = await api.get(`/store/new-items/?seller=${sellerId}&page=${page}&page_size=${pageSize}`);
       return response.data;
     } catch (err) {
-      return rejectWithValue(
-        err.response?.data || { message: "Failed to fetch seller items" }
-      );
+      return rejectWithValue(err.response?.data || { message: "Failed to fetch seller items" });
     }
   }
 );
 
+// Slice
 const itemsSlice = createSlice({
   name: "items",
   initialState: {
@@ -223,40 +186,21 @@ const itemsSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      .addCase(fetchItems.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
+      .addCase(fetchItems.pending, (state) => { state.loading = true; state.error = null; })
       .addCase(fetchItems.fulfilled, (state, action) => {
         state.loading = false;
-        if (Array.isArray(action.payload)) {
-          state.items = action.payload;
-        } else if (action.payload && Array.isArray(action.payload.results)) {
-          state.items = action.payload.results;
-        } else {
-          state.items = action.payload;
-        }
+        state.items = action.payload.results || [];
       })
-      .addCase(fetchItems.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
-      })
-      .addCase(fetchItem.pending, (state) => {
-        state.detailLoading = true;
-        state.error = null;
-      })
+      .addCase(fetchItems.rejected, (state, action) => { state.loading = false; state.error = action.payload; })
+
+      .addCase(fetchItem.pending, (state) => { state.detailLoading = true; state.error = null; })
       .addCase(fetchItem.fulfilled, (state, action) => {
         state.detailLoading = false;
         state.itemDetail = action.payload;
       })
-      .addCase(fetchItem.rejected, (state, action) => {
-        state.detailLoading = false;
-        state.error = action.payload;
-      })
-      .addCase(createItem.pending, (state) => {
-        state.creating = true;
-        state.error = null;
-      })
+      .addCase(fetchItem.rejected, (state, action) => { state.detailLoading = false; state.error = action.payload; })
+
+      .addCase(createItem.pending, (state) => { state.creating = true; state.error = null; })
       .addCase(createItem.fulfilled, (state, action) => {
         state.creating = false;
         if (action.payload) {
@@ -264,71 +208,57 @@ const itemsSlice = createSlice({
           state.itemDetail = action.payload;
         }
       })
-      .addCase(createItem.rejected, (state, action) => {
-        state.creating = false;
-        state.error = action.payload;
-      })
-      .addCase(updateItem.pending, (state) => {
-        state.updating = true;
-        state.error = null;
-      })
+      .addCase(createItem.rejected, (state, action) => { state.creating = false; state.error = action.payload; })
+
+      .addCase(updateItem.pending, (state) => { state.updating = true; state.error = null; })
       .addCase(updateItem.fulfilled, (state, action) => {
         state.updating = false;
         const updated = action.payload;
         if (updated) {
-          state.items = state.items.map((it) =>
-            it.id === updated.id ? updated : it
-          );
+          state.items = state.items.map(it => it.id === updated.id ? updated : it);
           if (state.itemDetail && state.itemDetail.id === updated.id) {
             state.itemDetail = updated;
           }
         }
       })
-      .addCase(updateItem.rejected, (state, action) => {
-        state.updating = false;
-        state.error = action.payload;
-      })
-      .addCase(deleteItem.pending, (state) => {
-        state.deleting = true;
-        state.error = null;
-      })
+      .addCase(updateItem.rejected, (state, action) => { state.updating = false; state.error = action.payload; })
+
+      .addCase(deleteItem.pending, (state) => { state.deleting = true; state.error = null; })
       .addCase(deleteItem.fulfilled, (state, action) => {
         state.deleting = false;
         const id = action.payload;
-        state.items = state.items.filter((it) => it.id !== id);
+        state.items = state.items.filter(it => it.id !== id);
         if (state.itemDetail && state.itemDetail.id === id) {
           state.itemDetail = null;
         }
       })
-      .addCase(deleteItem.rejected, (state, action) => {
-        state.deleting = false;
-        state.error = action.payload;
-      })
-      .addCase(fetchSellerItems.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
+      .addCase(deleteItem.rejected, (state, action) => { state.deleting = false; state.error = action.payload; })
+
+      .addCase(fetchSellerItems.pending, (state) => { state.loading = true; state.error = null; })
       .addCase(fetchSellerItems.fulfilled, (state, action) => {
         state.loading = false;
-        if (Array.isArray(action.payload)) {
-          state.items = action.payload;
-        } else if (action.payload && Array.isArray(action.payload.results)) {
+        if (Array.isArray(action.payload.results)) {
           state.items = action.payload.results;
-        } else {
+        } else if (Array.isArray(action.payload)) {
           state.items = action.payload;
+        } else {
+          state.items = [];
         }
       })
-      .addCase(fetchSellerItems.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
-      });
+      .addCase(fetchSellerItems.rejected, (state, action) => { state.loading = false; state.error = action.payload; });
   },
 });
 
-export const { clearItems, clearItemDetail, clearError, setItems } =
-  itemsSlice.actions;
+export const { clearItems, clearItemDetail, clearError, setItems } = itemsSlice.actions;
+
+// Selectors
 export const selectAllItems = (state) => state.items.items;
 export const selectItemsLoading = (state) => state.items.loading;
 export const selectItemDetail = (state) => state.items.itemDetail;
+export const selectItemDetailLoading = (state) => state.items.detailLoading;
+export const selectItemsCreating = (state) => state.items.creating;
+export const selectItemsUpdating = (state) => state.items.updating;
+export const selectItemsDeleting = (state) => state.items.deleting;
 export const selectItemsError = (state) => state.items.error;
+
 export default itemsSlice.reducer;

@@ -40,12 +40,26 @@ const FreeDeliveryIcon = () => (
   </svg>
 );
 
+const GooglePlayIcon = () => (
+  <svg width="40" height="40" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M325 234L104 56v400l221-178z" fill="#3BCCFF"/>
+    <path d="M104 56l221 178-221 178V56z" fill="#00A0FF"/>
+  </svg>
+);
+
+const AppleIcon = () => (
+  <svg width="40" height="40" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M349 150c-12 14-30 22-48 22-2-18 7-36 19-48 12-13 30-22 48-22 2 18-7 36-19 48z" fill="#000"/>
+    <path d="M256 400c-44 0-80-36-80-80 0-44 36-80 80-80 44 0 80 36 80 80 0 44-36 80-80 80z" fill="#000"/>
+  </svg>
+);
+
 const LoginSignupModal = ({ closeModal }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
   // Redux state
-  const { loading, error } = useSelector((state) => state.auth);
+  const { loading, error, user } = useSelector((state) => state.auth);
 
   // Local state
   const [mode, setMode] = useState("login"); // 'login' | 'signup'
@@ -57,6 +71,8 @@ const LoginSignupModal = ({ closeModal }) => {
     lastName: "",
   });
   const [otp, setOtp] = useState("");
+  const [loginType, setLoginType] = useState("customer"); // 'admin' | 'customer' | 'seller'
+  const [signupType, setSignupType] = useState("customer"); // 'customer' | 'seller'
 
   // Handlers
   const handleInputChange = (e) => {
@@ -82,7 +98,21 @@ const LoginSignupModal = ({ closeModal }) => {
     const result = await dispatch(loginUser({ email: formData.email, password: formData.password }));
     if (loginUser.fulfilled.match(result)) {
       closeModal();
-      navigate("/home");
+      // Wait for user state update after login
+      setTimeout(() => {
+        const currentUser = JSON.parse(localStorage.getItem("user"));
+        if (currentUser) {
+          if (loginType === "admin") {
+            navigate("/admin");
+          } else if (loginType === "seller") {
+            navigate("/seller/manage-items");
+          } else {
+            navigate("/home");
+          }
+        } else {
+          navigate("/home");
+        }
+      }, 100);
     }
   };
 
@@ -94,6 +124,7 @@ const LoginSignupModal = ({ closeModal }) => {
         password: formData.password,
         first_name: formData.firstName,
         last_name: formData.lastName,
+        is_seller: signupType === "seller",
       })
     );
     if (registerUser.fulfilled.match(result)) {
@@ -106,7 +137,18 @@ const LoginSignupModal = ({ closeModal }) => {
     const result = await dispatch(verifyOtp({ email: formData.email, otp }));
     if (verifyOtp.fulfilled.match(result)) {
       closeModal();
-      navigate("/home");
+      if (user) {
+        const userType = mode === "signup" ? signupType : loginType;
+        if (userType === "admin") {
+          navigate("/admin");
+        } else if (userType === "seller") {
+          navigate("/seller/manage-items");
+        } else {
+          navigate("/home");
+        }
+      } else {
+        navigate("/home");
+      }
     }
   };
 
@@ -115,8 +157,8 @@ const LoginSignupModal = ({ closeModal }) => {
     error ? <p className="text-red-400 text-sm mt-2">{error.detail || error}</p> : null;
 
   return (
-    <div className="fixed inset-0 bg-opacity-50 flex items-center justify-center p-4 z-50 transition-opacity duration-300 ease-in-out">
-      <div className="bg-white rounded-lg shadow-2xl overflow-hidden w-full max-w-4xl grid grid-cols-1 md:grid-cols-10 relative transform transition-all duration-300 ease-in-out scale-95">
+    <div className="fixed inset-0 bg-transparent backdrop-blur-sm flex items-center justify-center p-4 z-50 transition-opacity duration-300 ease-in-out">
+      <div className="rounded-lg shadow-2xl overflow-hidden w-full max-w-2xl grid grid-cols-1 md:grid-cols-10 relative transform transition-all duration-300 ease-in-out scale-95">
         {/* Close Button */}
         <button onClick={closeModal} className="absolute top-4 right-4 text-gray-400 hover:text-gray-800 z-10 md:text-white">
           <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -125,34 +167,81 @@ const LoginSignupModal = ({ closeModal }) => {
         </button>
 
         {/* Left Info Section */}
-        <div className="hidden md:block md:col-span-4 bg-gray-50 p-8">
-          <h3 className="font-semibold text-lg mb-2">Why choose Bigbasket?</h3>
-          <div className="w-12 h-0.5 bg-red-500 mb-8"></div>
-          <div className="grid grid-cols-2 gap-8 mb-8">
-            <InfoIcon text="Quality"><QualityIcon /></InfoIcon>
-            <InfoIcon text="On time"><OnTimeIcon /></InfoIcon>
-            <InfoIcon text="Return Policy"><ReturnPolicyIcon /></InfoIcon>
-            <InfoIcon text="Free Delivery"><FreeDeliveryIcon /></InfoIcon>
+        <div className="hidden md:block md:col-span-4 bg-gray-100 p-8 flex flex-col justify-between">
+          <div>
+            <h3 className="font-semibold text-lg mb-2 text-yellow-800">Why choose Bigbasket?</h3>
+            <div className="w-12 h-0.5 bg-yellow-600 mb-8"></div>
+            <div className="grid grid-cols-2 gap-8 mb-8">
+              <InfoIcon text="Quality"><QualityIcon /></InfoIcon>
+              <InfoIcon text="On time"><OnTimeIcon /></InfoIcon>
+              <InfoIcon text="Return Policy"><ReturnPolicyIcon /></InfoIcon>
+              <InfoIcon text="Free Delivery"><FreeDeliveryIcon /></InfoIcon>
+            </div>
+          </div>
+          <div className="flex items-center space-x-4">
+            <span className="text-gray-700">Find us on</span>
+            <button aria-label="Google Play" className="p-2 border rounded-md hover:bg-gray-200">
+              <GooglePlayIcon />
+            </button>
+            <button aria-label="Apple Store" className="p-2 border rounded-md hover:bg-gray-200">
+              <AppleIcon />
+            </button>
           </div>
         </div>
 
         {/* Right Form Section */}
-        <div className="md:col-span-6 p-8 sm:p-12 text-white flex flex-col justify-center">
+        <div className="md:col-span-6 p-8 sm:p-12 bg-black text-white flex flex-col justify-center">
           {step === "details" ? (
             mode === "login" ? (
               <>
-                <h2 className="text-2xl font-bold">Login</h2>
-                <p className="text-gray-400 mb-2">Welcome back!</p>
+                <h2 className="text-3xl font-bold mb-1">Login/ Sign up</h2>
+                <p className="text-yellow-500 mb-6">Using OTP</p>
+
+                {/* Login Type Selection */}
+                <div className="mb-6 flex space-x-4">
+                  {["admin", "customer", "seller"].map((type) => (
+                    <button
+                      key={type}
+                      onClick={() => setLoginType(type)}
+                      className={`flex-1 py-2 rounded-md font-semibold ${
+                        loginType === type ? "bg-yellow-600 text-black" : "bg-gray-800 text-yellow-400"
+                      }`}
+                    >
+                      {type.charAt(0).toUpperCase() + type.slice(1)}
+                    </button>
+                  ))}
+                </div>
+
                 <form onSubmit={handleLogin}>
-                  <input name="email" type="email" value={formData.email} onChange={handleInputChange} placeholder="Enter Email Id" required className="w-full px-4 py-3 mb-4 bg-white text-gray-900 rounded-md border-2 border-gray-600" />
-                  <input name="password" type="password" value={formData.password} onChange={handleInputChange} placeholder="Enter Password" required className="w-full px-4 py-3 mb-4 bg-white text-gray-900 rounded-md border-2 border-gray-600" />
+                  <input
+                    name="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    placeholder="Enter Phone number/ Email Id"
+                    required
+                    className="w-full px-4 py-3 mb-4 rounded-md border-2 border-gray-600 bg-white text-black"
+                  />
+                  <input
+                    name="password"
+                    type="password"
+                    value={formData.password}
+                    onChange={handleInputChange}
+                    placeholder="Enter Password"
+                    required
+                    className="w-full px-4 py-3 mb-4 rounded-md border-2 border-gray-600 bg-white text-black"
+                  />
                   {renderError()}
-                  <button type="submit" disabled={loading} className="w-full mt-4 bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-md disabled:bg-gray-500">
-                    {loading ? "Logging in..." : "Login"}
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full mt-4 bg-yellow-600 hover:bg-yellow-700 text-black font-bold py-3 px-4 rounded-md disabled:bg-gray-500"
+                  >
+                    {loading ? "Logging in..." : "Continue"}
                   </button>
-                  <p className="text-center mt-4 text-sm text-gray-400">
+                  <p className="text-center mt-4 text-sm text-yellow-400">
                     Don&apos;t have an account?{" "}
-                    <button type="button" onClick={() => switchMode("signup")} className="font-semibold text-red-400 hover:text-red-300">
+                    <button type="button" onClick={() => switchMode("signup")} className="font-semibold underline">
                       Sign up
                     </button>
                   </p>
@@ -160,22 +249,74 @@ const LoginSignupModal = ({ closeModal }) => {
               </>
             ) : (
               <>
-                <h2 className="text-2xl font-bold">Sign up</h2>
-                <p className="text-gray-400 mb-2">Create your account</p>
+                <h2 className="text-3xl font-bold mb-1">Sign up</h2>
+                <p className="text-yellow-500 mb-6">Create your account</p>
+
+                {/* Signup Type Selection */}
+                <div className="mb-6 flex space-x-4">
+                  {["customer", "seller"].map((type) => (
+                    <button
+                      key={type}
+                      onClick={() => setSignupType(type)}
+                      className={`flex-1 py-2 rounded-md font-semibold ${
+                        signupType === type ? "bg-yellow-600 text-black" : "bg-gray-800 text-yellow-400"
+                      }`}
+                    >
+                      {type.charAt(0).toUpperCase() + type.slice(1)}
+                    </button>
+                  ))}
+                </div>
+
                 <form onSubmit={handleRegister}>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <input name="firstName" type="text" value={formData.firstName} onChange={handleInputChange} placeholder="First Name" required className="px-4 py-3 bg-white text-gray-900 rounded-md border-2 border-gray-600" />
-                    <input name="lastName" type="text" value={formData.lastName} onChange={handleInputChange} placeholder="Last Name" required className="px-4 py-3 bg-white text-gray-900 rounded-md border-2 border-gray-600" />
+                    <input
+                      name="firstName"
+                      type="text"
+                      value={formData.firstName}
+                      onChange={handleInputChange}
+                      placeholder="First Name"
+                      required
+                      className="px-4 py-3 bg-white text-gray-900 rounded-md border-2 border-gray-600"
+                    />
+                    <input
+                      name="lastName"
+                      type="text"
+                      value={formData.lastName}
+                      onChange={handleInputChange}
+                      placeholder="Last Name"
+                      required
+                      className="px-4 py-3 bg-white text-gray-900 rounded-md border-2 border-gray-600"
+                    />
                   </div>
-                  <input name="email" type="email" value={formData.email} onChange={handleInputChange} placeholder="Enter Email Id" required className="w-full px-4 py-3 mt-4 bg-white text-gray-900 rounded-md border-2 border-gray-600" />
-                  <input name="password" type="password" value={formData.password} onChange={handleInputChange} placeholder="Create Password" required className="w-full px-4 py-3 mt-4 bg-white text-gray-900 rounded-md border-2 border-gray-600" />
+                  <input
+                    name="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    placeholder="Enter Email Id"
+                    required
+                    className="w-full px-4 py-3 mt-4 bg-white text-white rounded-md border-2 border-gray-600"
+                  />
+                  <input
+                    name="password"
+                    type="password"
+                    value={formData.password}
+                    onChange={handleInputChange}
+                    placeholder="Create Password"
+                    required
+                    className="w-full px-4 py-3 mt-4 bg-white text-white rounded-md border-2 border-gray-600"
+                  />
                   {renderError()}
-                  <button type="submit" disabled={loading} className="w-full mt-6 bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-md disabled:bg-gray-500">
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full mt-6 bg-yellow-600 hover:bg-yellow-700 text-black font-bold py-3 px-4 rounded-md disabled:bg-gray-500"
+                  >
                     {loading ? "Sending OTP..." : "Continue"}
                   </button>
-                  <p className="text-center mt-4 text-sm text-gray-400">
+                  <p className="text-center mt-4 text-sm text-yellow-400">
                     Already have an account?{" "}
-                    <button type="button" onClick={() => switchMode("login")} className="font-semibold text-red-400 hover:text-red-300">
+                    <button type="button" onClick={() => switchMode("login")} className="font-semibold underline">
                       Login
                     </button>
                   </p>
@@ -187,12 +328,28 @@ const LoginSignupModal = ({ closeModal }) => {
               <h2 className="text-2xl font-bold">Verify with OTP</h2>
               <p className="text-gray-400 mb-2">Sent to {formData.email}</p>
               <form onSubmit={handleVerifyOtp}>
-                <input type="text" value={otp} onChange={handleOtpChange} placeholder="Enter OTP" maxLength="6" required className="w-full px-4 py-3 text-center tracking-widest bg-white text-gray-900 rounded-md border-2 border-gray-600" />
+                <input
+                  type="text"
+                  value={otp}
+                  onChange={handleOtpChange}
+                  placeholder="Enter OTP"
+                  maxLength="6"
+                  required
+                  className="w-full px-4 py-3 text-center tracking-widest bg-white text-gray-900 rounded-md border-2 border-gray-600"
+                />
                 {renderError()}
-                <button type="submit" disabled={loading} className="w-full mt-6 bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-4 rounded-md disabled:bg-gray-500">
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full mt-6 bg-yellow-600 hover:bg-yellow-700 text-black font-bold py-3 px-4 rounded-md disabled:bg-gray-500"
+                >
                   {loading ? "Verifying..." : "Verify & Proceed"}
                 </button>
-                <button type="button" onClick={() => setStep("details")} className="w-full mt-4 text-gray-400 text-sm hover:text-white">
+                <button
+                  type="button"
+                  onClick={() => setStep("details")}
+                  className="w-full mt-4 text-gray-400 text-sm hover:text-white"
+                >
                   Go Back
                 </button>
               </form>

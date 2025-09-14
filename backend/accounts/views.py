@@ -25,6 +25,7 @@ from accounts.serializers import (
     SellerSerializer,
 )
 from accounts.models import User, OTP, Seller
+from django.core.exceptions import ObjectDoesNotExist
 
 logger = logging.getLogger(__name__)
 
@@ -265,3 +266,14 @@ class SellerAdminViewSet(viewsets.ModelViewSet):
     queryset = Seller.objects.all()
     serializer_class = SellerSerializer
     permission_classes = [IsSuperUser]
+
+
+class SellerProfileView(generics.RetrieveUpdateAPIView):
+    serializer_class = SellerSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_object(self):
+        try:
+            return self.request.user.seller
+        except Seller.DoesNotExist:
+            raise serializers.ValidationError("Seller profile not found.")

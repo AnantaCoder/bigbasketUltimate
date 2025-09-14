@@ -1,6 +1,6 @@
 from datetime import timedelta
 import environ
-from decouple import config
+#from decouple import env
 from pathlib import Path
 import base64, json
 import os
@@ -14,7 +14,7 @@ environ.Env.read_env(os.path.join(BASE_DIR, ".env"))
 
 DEBUG = env("DEBUG", default=False)
 
-SECRET_KEY = config("SECRET_KEY")
+SECRET_KEY = env("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -43,7 +43,7 @@ INSTALLED_APPS = [
     "store",
     "payments",
 ]
-# asgi config
+# asgi env
 ASGI_APPLICATION = "backend.asgi.application"
 
 
@@ -112,11 +112,11 @@ WSGI_APPLICATION = "backend.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": config("DB_NAME"),
-        "USER": config("DB_USER"),
-        "PASSWORD": config("DB_PASSWORD"),
-        "HOST": config("DB_HOST"),
-        "PORT": config("DB_PORT", default="5432"),
+        "NAME": env("DB_NAME"),
+        "USER": env("DB_USER"),
+        "PASSWORD": env("DB_PASSWORD"),
+        "HOST": env("DB_HOST"),
+        "PORT": env("DB_PORT", default="5432"),
     }
 }
 try:

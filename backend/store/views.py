@@ -120,10 +120,11 @@ class ItemViewSet(viewsets.ModelViewSet):
         return queryset.distinct()
 
 
+
+
 class ItemDetailAPIView(APIView):
 
     permission_classes = [IsSellerOrReadOnly]
-
     def get_object(self, pk):
         try:
             return Item.objects.get(pk=pk)
@@ -139,6 +140,15 @@ class ItemDetailAPIView(APIView):
         item = self.get_object(pk)
         self.check_object_permissions(request, item)
         serializer = ItemSerializer(item, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def patch(self, request, pk, format=None):
+        item = self.get_object(pk)
+        self.check_object_permissions(request, item)
+        serializer = ItemSerializer(item, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
@@ -332,16 +342,18 @@ class CheckoutAPIView(APIView):
 
     def post(self, request, format=None):
         user = request.user
+
         if hasattr(user, "seller"):
             return Response(
-                {"detail": "Sellers cannot place orders."},
+                {"detail": "Sellers cannot place orders.", "user_type": "seller"},
                 status=status.HTTP_403_FORBIDDEN,
             )
 
         cart = Cart.objects.filter(user=user, seller=None).first()
         if not cart or not cart.cart_items.exists():
             return Response(
-                {"detail": "Cart is empty."}, status=status.HTTP_400_BAD_REQUEST
+                {"detail": "Cart is empty."},
+                status=status.HTTP_400_BAD_REQUEST
             )
 
         order_user_id = request.data.get("order_user_id")
@@ -355,7 +367,8 @@ class CheckoutAPIView(APIView):
             order_user = OrderUser.objects.get(id=order_user_id, user=user)
         except OrderUser.DoesNotExist:
             return Response(
-                {"detail": "Invalid order_user_id."}, status=status.HTTP_400_BAD_REQUEST
+                {"detail": "Invalid order_user_id."},
+                status=status.HTTP_400_BAD_REQUEST
             )
 
         # Create OrderItems from CartItems
@@ -364,7 +377,7 @@ class CheckoutAPIView(APIView):
         for cart_item in cart.cart_items.all():
             if cart_item.quantity > cart_item.item.quantity:
                 return Response(
-                    {"detail": f"Insufficient stock for {cart_item.item.item_name}."},
+                    {"detail": f"Insufficient stock for {cart_item.item.item_name}. Available: {cart_item.item.quantity}, requested: {cart_item.quantity}"},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 

@@ -7,6 +7,7 @@ from accounts.views import (
     LogoutView,
     UserAdminViewSet,
     SellerAdminViewSet,
+    SellerProfileView,
 )
 from accounts.views_dashboard import DashboardStatsView
 
@@ -20,6 +21,7 @@ urlpatterns = [
     path("login/", LoginView.as_view(), name="login"),
     path("logout/", LogoutView.as_view(), name="logout"),
     path("dashboard-stats/", DashboardStatsView.as_view(), name="dashboard-stats"),
+    path("seller-profile/", SellerProfileView.as_view(), name="seller-profile"),
 ]
 
 urlpatterns += router.urls

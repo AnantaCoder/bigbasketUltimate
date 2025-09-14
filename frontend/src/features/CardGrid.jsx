@@ -160,13 +160,13 @@ const CardGrid = ({
     );
   }
 
-  if (error) {
-    return (
-      <div className="p-6 text-red-500">
-        Error: {typeof error === "string" ? error : JSON.stringify(error)}
-      </div>
-    );
-  }
+  // if (error) {
+  //   return (
+  //     <div className="p-6 text-red-500">
+  //       Error: {typeof error === "string" ? error : JSON.stringify(error)}
+  //     </div>
+  //   );
+  // }
 
   if (!items.length) {
     return (

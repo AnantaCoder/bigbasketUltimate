@@ -307,34 +307,34 @@ function Navbar() {
         </div>
       </div>
 
-      {/* Bottom Nav - Desktop */}
-      <div className="container mx-auto px-4 hidden lg:block bg-gradient-to-r from-gray-50 to-white relative">
+            {/* Bottom Nav - Desktop */}
+            <div className="container mx-auto px-4 hidden lg:block bg-gradient-to-r from-gray-50 to-white relative">
         <div className="flex items-center justify-between py-3">
-          <button
-            onClick={() => setIsCategoryOpen(!isCategoryOpen)}
-            className="bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white font-bold py-3 px-6 rounded-xl flex items-center text-sm transition-all duration-300 shadow-md hover:shadow-lg hover:scale-105"
-            aria-haspopup="true"
-            aria-expanded={isCategoryOpen}
-          >
-            <MenuIcon />
-            <span className="mr-2">SHOP BY CATEGORY</span>
-            <ChevronDownIcon className={`h-5 w-5 transition-transform duration-300 ${isCategoryOpen ? 'transform rotate-180' : ''}`} />
-          </button>
-          {isCategoryOpen && <CategoryDropdown onCategorySelect={(categoryId) => {
-            // Close the dropdown
-            setIsCategoryOpen(false);
-            // Navigate to home page with category filter as query param
-            navigate(`/home?category=${categoryId}`);
-          }} />}
-          <div className="flex items-center space-x-8 text-sm font-semibold">
-            <button onClick={() => handleCategoryClick("exotic fruits and vegetables")} className="text-gray-600 hover:text-emerald-600 px-3 py-2 rounded-lg">Exotic Fruits and Vegetables</button>
-            <button onClick={() => handleCategoryClick("tea")} className="text-gray-600 hover:text-emerald-600 px-3 py-2 rounded-lg">Tea</button>
-            <button onClick={() => handleCategoryClick("ghee")} className="text-gray-600 hover:text-emerald-600 px-3 py-2 rounded-lg">Ghee</button>
-            <button onClick={handleNandiniClick} className="text-gray-600 hover:text-emerald-600 px-3 py-2 rounded-lg">Nandini</button>
-            <button onClick={() => handleCategoryClick("Vegetables")} className="text-gray-600 hover:text-emerald-600 px-3 py-2 rounded-lg">Fresh Vegetables</button>
-          </div>
-        </div>
-      </div>
+                <button
+                  onClick={() => setIsCategoryOpen(!isCategoryOpen)}
+                  className="bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white font-bold py-3 px-6 rounded-xl flex items-center text-sm transition-all duration-300 shadow-md hover:shadow-lg hover:scale-105"
+                  aria-haspopup="true"
+                  aria-expanded={isCategoryOpen}
+                >
+                  <MenuIcon />
+                  <span className="mr-2">SHOP BY CATEGORY</span>
+                  <ChevronDownIcon className={`h-5 w-5 transition-transform duration-300 ${isCategoryOpen ? 'transform rotate-180' : ''}`} />
+                </button>
+                {isCategoryOpen && <CategoryDropdown onCategorySelect={(categoryId) => {
+                  // Close the dropdown
+                  setIsCategoryOpen(false);
+                  // Navigate to home page with category filter as query param
+                  navigate(`/home?category=${categoryId}`);
+                }} />}
+                <div className="flex items-center space-x-8 text-sm font-semibold">
+                  <button onClick={() => handleCategoryClick("exotic fruits and vegetables")} className="text-gray-600 hover:text-emerald-600 px-3 py-2 rounded-lg">Exotic Fruits and Vegetables</button>
+                  <button onClick={() => handleCategoryClick("tea")} className="text-gray-600 hover:text-emerald-600 px-3 py-2 rounded-lg">Tea</button>
+                  <button onClick={() => handleCategoryClick("ghee")} className="text-gray-600 hover:text-emerald-600 px-3 py-2 rounded-lg">Ghee</button>
+                  <button onClick={handleNandiniClick} className="text-gray-600 hover:text-emerald-600 px-3 py-2 rounded-lg">Nandini</button>
+                  <button onClick={() => handleCategoryClick("Vegetables")} className="text-gray-600 hover:text-emerald-600 px-3 py-2 rounded-lg">Fresh Vegetables</button>
+                </div>
+              </div>
+            </div>
 
       {/* Mobile Menu */}
       <div className={`fixed inset-0 z-50 transform transition-transform duration-300 ease-in-out lg:hidden ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"}`}>

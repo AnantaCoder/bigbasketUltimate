@@ -10,7 +10,6 @@ const Sidebar = () => (
         <li><NavLink to="/admin/users" style={({ isActive }) => ({ color: isActive ? "#61dafb" : "#fff" })}>Users</NavLink></li>
         <li><NavLink to="/admin/products" style={({ isActive }) => ({ color: isActive ? "#61dafb" : "#fff" })}>Products</NavLink></li>
         <li><NavLink to="/admin/orders" style={({ isActive }) => ({ color: isActive ? "#61dafb" : "#fff" })}>Orders</NavLink></li>
-        <li><NavLink to="/admin/settings" style={({ isActive }) => ({ color: isActive ? "#61dafb" : "#fff" })}>Settings</NavLink></li>
       </ul>
     </nav>
   </aside>

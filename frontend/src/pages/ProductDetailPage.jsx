@@ -1,20 +1,29 @@
 import React, { useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { fetchItem, selectItemDetail, selectItemsError, selectItemsLoading } from '../app/slices/itemsSlice';
+import {
+  fetchItem,
+  clearItemDetail,
+  selectItemDetail,
+  selectItemsError,
+  selectItemDetailLoading, // <- new selector
+} from '../app/slices/itemsSlice';
 import { addItemToCart } from '../app/slices/CartSlice';
 
 const ProductDetailPage = () => {
   const { id } = useParams();
   const dispatch = useDispatch();
   const item = useSelector(selectItemDetail);
-  const loading = useSelector(selectItemsLoading);
+  const loading = useSelector(selectItemDetailLoading);
   const error = useSelector(selectItemsError);
 
   useEffect(() => {
     if (id) {
-      dispatch(fetchItem(id));
+      dispatch(fetchItem(parseInt(id, 10)));
     }
+    return () => {
+      dispatch(clearItemDetail());
+    };
   }, [dispatch, id]);
 
   const handleAddToCart = () => {
@@ -86,6 +95,56 @@ const ProductDetailPage = () => {
 
             {/* Product Details */}
             <div className="md:w-1/2 p-8">
+              {/* Product Description */}
+              <div className="mb-8">
+                <h2 className="text-2xl font-bold mb-6">Description</h2>
+                <p className="text-gray-700">{item.description || 'No description available.'}</p>
+              </div>
+
+              {/* Why choose bigbasket section */}
+              <div className="mb-8">
+                <h2 className="text-2xl font-bold mb-6">Why choose bigbasket?</h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
+                  <div className="flex flex-col items-center bg-gray-100 p-4 rounded-lg">
+                    <svg className="w-8 h-8 mb-2 text-gray-700" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M9 12l2 2 4-4" />
+                      <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2v-7" />
+                      <path d="M7 10V6a5 5 0 0110 0v4" />
+                    </svg>
+                    <span className="font-semibold text-center">Quality products<br />You can trust</span>
+                  </div>
+                  <div className="flex flex-col items-center bg-gray-100 p-4 rounded-lg">
+                    <svg className="w-8 h-8 mb-2 text-gray-700" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+                    </svg>
+                    <span className="font-semibold text-center">10 min delivery*<br />On selected locations</span>
+                  </div>
+                  <div className="flex flex-col items-center bg-gray-100 p-4 rounded-lg">
+                    <svg className="w-8 h-8 mb-2 text-gray-700" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="10" />
+                      <polyline points="12 6 12 12 16 14" />
+                    </svg>
+                    <span className="font-semibold text-center">On time<br />Guarantee</span>
+                  </div>
+                  <div className="flex flex-col items-center bg-gray-100 p-4 rounded-lg">
+                    <svg className="w-8 h-8 mb-2 text-gray-700" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M3 10h18" />
+                      <path d="M3 6h18" />
+                      <path d="M3 14h18" />
+                      <path d="M3 18h18" />
+                    </svg>
+                    <span className="font-semibold text-center">Free delivery*<br />No extra cost</span>
+                  </div>
+                  <div className="flex flex-col items-center bg-gray-100 p-4 rounded-lg">
+                    <svg className="w-8 h-8 mb-2 text-gray-700" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+                      <path d="M7 10l5 5 5-5" />
+                    </svg>
+                    <span className="font-semibold text-center">Return Policy<br />No Question asked</span>
+                  </div>
+                </div>
+              </div>
+
               <div className="mb-4">
                 <span className={`inline-block px-3 py-1 rounded-full text-sm font-semibold ${
                   item.is_in_stock ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
@@ -102,12 +161,7 @@ const ProductDetailPage = () => {
 
               <div className="text-4xl font-bold text-gray-900 mb-6">₹{item.price}</div>
 
-              {item.description && (
-                <div className="mb-6">
-                  <h3 className="text-lg font-semibold mb-2">Description</h3>
-                  <p className="text-gray-700">{item.description}</p>
-                </div>
-              )}
+
 
               <div className="flex gap-4">
                 <button

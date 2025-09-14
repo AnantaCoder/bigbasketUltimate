@@ -10,20 +10,30 @@ const Products = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Fetch all products from API without pagination
+  // Fetch all products from API with pagination handling
   const fetchProducts = async () => {
     setLoading(true);
     setError("");
     try {
-      const res = await api.get("/store/items/");
-      const data = res.data;
-      if (Array.isArray(data)) {
-        setProducts(data);
-      } else if (data && Array.isArray(data.results)) {
-        setProducts(data.results);
-      } else {
-        setProducts([]);
+      let allProducts = [];
+      let nextUrl = "/store/items/?page_size=100"; // Large page size to minimize requests
+
+      while (nextUrl) {
+        const res = await api.get(nextUrl);
+        const data = res.data;
+
+        if (Array.isArray(data)) {
+          allProducts = [...allProducts, ...data];
+          nextUrl = null; // No pagination
+        } else if (data && Array.isArray(data.results)) {
+          allProducts = [...allProducts, ...data.results];
+          nextUrl = data.next; // Continue with next page
+        } else {
+          nextUrl = null;
+        }
       }
+
+      setProducts(allProducts);
     } catch (err) {
       setError("Failed to fetch products");
     }

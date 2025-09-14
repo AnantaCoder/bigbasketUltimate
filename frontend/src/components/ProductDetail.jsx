@@ -86,16 +86,16 @@ const ProductDetail = () => {
     );
   }
 
-  if (error) {
-    return (
-      <div className="w-full min-h-screen flex flex-col items-center justify-center p-6">
-        <p className="text-red-500 mb-4">Error: {error}</p>
-        <button onClick={() => navigate(-1)} className="px-4 py-2 bg-gray-200 rounded">Go back</button>
-      </div>
-    );
-  }
+  // if (error) {
+  //   return (
+  //     <div className="w-full min-h-screen flex flex-col items-center justify-center p-6">
+  //       <p className="text-red-500 mb-4">Error: {error}</p>
+  //       <button onClick={() => navigate(-1)} className="px-4 py-2 bg-gray-200 rounded">Go back</button>
+  //     </div>
+  //   );
+  // }
 
-  if (!product) {
+  if (!product || error) {
     return (
         <div className="w-full min-h-screen flex flex-col items-center justify-center p-6">
           <p className="text-gray-500 mb-4">Product could not be found.</p>

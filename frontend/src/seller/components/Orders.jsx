@@ -26,12 +26,17 @@ const Orders = () => {
 
   useEffect(() => {
     fetchOrders();
+    // Poll every 30 seconds for updates
+    const interval = setInterval(fetchOrders, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   const filteredOrders = (orders || []).filter(
     (o) =>
       o.status?.toLowerCase().includes(search.toLowerCase()) ||
-      String(o.id).includes(search)
+      String(o.id).includes(search) ||
+      o.order_user?.user?.toLowerCase().includes(search.toLowerCase()) ||
+      o.buyer_email?.toLowerCase().includes(search.toLowerCase())
   );
 
   const openEditModal = (order) => {
@@ -68,137 +73,137 @@ const Orders = () => {
     setLoading(false);
   };
 
+  const formatDate = (dateString) => {
+    if (!dateString) return "N/A";
+    return new Date(dateString).toLocaleDateString();
+  };
+
+  const getCustomerName = (order) => {
+    return order.order_user?.user || order.buyer_email || "N/A";
+  };
+
   return (
-    <div>
-      <h2>Seller Order Management</h2>
-      <div style={{ marginBottom: 16 }}>
+    <div className="p-6 bg-gray-50 min-h-screen">
+      <h2 className="text-3xl font-bold text-gray-900 mb-6">Seller Order Management</h2>
+      <div className="mb-6">
         <input
           type="text"
-          placeholder="Search orders by status or ID..."
+          placeholder="Search orders by status, ID, customer..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          style={{ padding: 8, width: 250, marginRight: 16 }}
+          className="p-3 border border-gray-300 rounded-lg w-full max-w-md shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
         />
       </div>
-      {loading && <div>Loading...</div>}
-      {error && <div style={{ color: "red" }}>{error}</div>}
-      <table style={{ width: "100%", borderCollapse: "collapse" }}>
-        <thead>
-          <tr style={{ background: "#f0f0f0" }}>
-            <th style={{ padding: 8, border: "1px solid #ddd" }}>Order ID</th>
-            <th style={{ padding: 8, border: "1px solid #ddd" }}>Status</th>
-            <th style={{ padding: 8, border: "1px solid #ddd" }}>Total</th>
-            <th style={{ padding: 8, border: "1px solid #ddd" }}>Tracking</th>
-            <th style={{ padding: 8, border: "1px solid #ddd" }}>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {filteredOrders.map((order) => (
-            <tr key={order.id}>
-              <td style={{ padding: 8, border: "1px solid #ddd" }}>
-                {order.id}
-              </td>
-              <td style={{ padding: 8, border: "1px solid #ddd" }}>
-                {order.status}
-              </td>
-              <td style={{ padding: 8, border: "1px solid #ddd" }}>
-                {order.total_amount}
-              </td>
-              <td style={{ padding: 8, border: "1px solid #ddd" }}>
-                {order.tracking_number || "N/A"}
-              </td>
-              <td style={{ padding: 8, border: "1px solid #ddd" }}>
-                <button
-                  onClick={() => openEditModal(order)}
-                  style={{ marginRight: 8 }}
-                >
-                  Update Status
-                </button>
-              </td>
-            </tr>
-          ))}
-          {filteredOrders.length === 0 && !loading && (
+      {loading && <div className="text-center py-4">Loading...</div>}
+      {error && <div className="text-red-600 mb-4">{error}</div>}
+      <div className="bg-white shadow-md rounded-lg overflow-hidden">
+        <table className="w-full table-auto">
+          <thead className="bg-gray-100">
             <tr>
-              <td colSpan={5} style={{ textAlign: "center", padding: 16 }}>
-                No orders found.
-              </td>
+              <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Order ID</th>
+              <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Customer</th>
+              <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Total Price</th>
+              <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Status</th>
+              <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Date</th>
+              <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Actions</th>
             </tr>
-          )}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {filteredOrders.map((order) => (
+              <tr key={order.id} className="border-t border-gray-200 hover:bg-gray-50">
+                <td className="px-4 py-3 text-sm text-gray-900">{order.id}</td>
+                <td className="px-4 py-3 text-sm text-gray-900">{getCustomerName(order)}</td>
+                <td className="px-4 py-3 text-sm text-gray-900">₹{order.total_amount}</td>
+                <td className="px-4 py-3 text-sm">
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                    order.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                    order.status === 'processing' ? 'bg-blue-100 text-blue-800' :
+                    order.status === 'shipped' ? 'bg-purple-100 text-purple-800' :
+                    order.status === 'delivered' ? 'bg-green-100 text-green-800' :
+                    'bg-gray-100 text-gray-800'
+                  }`}>
+                    {order.status}
+                  </span>
+                </td>
+                <td className="px-4 py-3 text-sm text-gray-900">{formatDate(order.created_at)}</td>
+                <td className="px-4 py-3 text-sm">
+                  <button
+                    onClick={() => openEditModal(order)}
+                    className="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded-md text-sm font-medium transition-colors"
+                  >
+                    Update Status
+                  </button>
+                </td>
+              </tr>
+            ))}
+            {filteredOrders.length === 0 && !loading && (
+              <tr>
+                <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
+                  No orders found.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
 
       {modalOpen && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            width: "100vw",
-            height: "100vh",
-            background: "rgba(0,0,0,0.3)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <form
-            onSubmit={handleSubmit}
-            style={{
-              background: "#fff",
-              padding: 24,
-              borderRadius: 8,
-              minWidth: 300,
-            }}
-          >
-            <h3>Update Order Status</h3>
-            <div style={{ marginBottom: 12 }}>
-              <label>Status:</label>
-              <br />
-              <select
-                name="status"
-                value={form.status}
-                onChange={handleChange}
-                required
-                style={{ width: "100%", padding: 8 }}
-              >
-                <option value="pending">Pending</option>
-                <option value="processing">Processing</option>
-                <option value="shipped">Shipped</option>
-                <option value="delivered">Delivered</option>
-              </select>
-            </div>
-            <div style={{ marginBottom: 12 }}>
-              <label>Tracking Number:</label>
-              <br />
-              <input
-                name="tracking_number"
-                value={form.tracking_number}
-                onChange={handleChange}
-                style={{ width: "100%", padding: 8 }}
-              />
-            </div>
-            <div style={{ marginBottom: 12 }}>
-              <label>Estimated Delivery:</label>
-              <br />
-              <input
-                name="estimated_delivery"
-                type="date"
-                value={form.estimated_delivery}
-                onChange={handleChange}
-                style={{ width: "100%", padding: 8 }}
-              />
-            </div>
-            <div style={{ display: "flex", justifyContent: "flex-end" }}>
-              <button
-                type="button"
-                onClick={closeModal}
-                style={{ marginRight: 8 }}
-              >
-                Cancel
-              </button>
-              <button type="submit">Update</button>
-            </div>
-          </form>
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
+            <h3 className="text-xl font-bold text-gray-900 mb-4">Update Order Status</h3>
+            <form onSubmit={handleSubmit}>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Status:</label>
+                <select
+                  name="status"
+                  value={form.status}
+                  onChange={handleChange}
+                  required
+                  className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                  <option value="pending">Pending</option>
+                  <option value="processing">Processing</option>
+                  <option value="shipped">Shipped</option>
+                  <option value="delivered">Delivered</option>
+                  <option value="cancelled">Cancelled</option>
+                </select>
+              </div>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Tracking Number:</label>
+                <input
+                  name="tracking_number"
+                  value={form.tracking_number}
+                  onChange={handleChange}
+                  className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Estimated Delivery:</label>
+                <input
+                  name="estimated_delivery"
+                  type="date"
+                  value={form.estimated_delivery}
+                  onChange={handleChange}
+                  className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+              <div className="flex justify-end space-x-3">
+                <button
+                  type="button"
+                  onClick={closeModal}
+                  className="px-4 py-2 bg-gray-300 hover:bg-gray-400 text-gray-800 rounded-md transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md transition-colors"
+                >
+                  Update
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>
