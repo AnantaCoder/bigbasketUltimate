@@ -8,6 +8,7 @@ from store.serializers import (
     OrderUserSerializer,
     OrderItemSerializer,
     OrderSerializer,
+    SavedForLaterSerializer,
 )
 from rest_framework.views import APIView
 from rest_framework import status, response, permissions, serializers
@@ -18,7 +19,7 @@ from django.http import Http404
 from rest_framework import generics
 from rest_framework import viewsets, permissions
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
-from .models import Item
+from .models import *
 from .serializers import ItemSerializer
 from rest_framework.filters import SearchFilter
 from django_filters.rest_framework import DjangoFilterBackend
@@ -120,11 +121,10 @@ class ItemViewSet(viewsets.ModelViewSet):
         return queryset.distinct()
 
 
-
-
 class ItemDetailAPIView(APIView):
 
     permission_classes = [IsSellerOrReadOnly]
+
     def get_object(self, pk):
         try:
             return Item.objects.get(pk=pk)
@@ -360,8 +360,7 @@ class CheckoutAPIView(APIView):
         cart = Cart.objects.filter(user=user, seller=None).first()
         if not cart or not cart.cart_items.exists():
             return Response(
-                {"detail": "Cart is empty."},
-                status=status.HTTP_400_BAD_REQUEST
+                {"detail": "Cart is empty."}, status=status.HTTP_400_BAD_REQUEST
             )
 
         order_user_id = request.data.get("order_user_id")
@@ -375,8 +374,7 @@ class CheckoutAPIView(APIView):
             order_user = OrderUser.objects.get(id=order_user_id, user=user)
         except OrderUser.DoesNotExist:
             return Response(
-                {"detail": "Invalid order_user_id."},
-                status=status.HTTP_400_BAD_REQUEST
+                {"detail": "Invalid order_user_id."}, status=status.HTTP_400_BAD_REQUEST
             )
 
         # Create OrderItems from CartItems
@@ -385,7 +383,9 @@ class CheckoutAPIView(APIView):
         for cart_item in cart.cart_items.all():
             if cart_item.quantity > cart_item.item.quantity:
                 return Response(
-                    {"detail": f"Insufficient stock for {cart_item.item.item_name}. Available: {cart_item.item.quantity}, requested: {cart_item.quantity}"},
+                    {
+                        "detail": f"Insufficient stock for {cart_item.item.item_name}. Available: {cart_item.item.quantity}, requested: {cart_item.quantity}"
+                    },
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
@@ -462,7 +462,11 @@ class SellerOrderListAPIView(generics.ListAPIView):
         if not hasattr(user, "seller"):
             return Order.objects.none()
         # Orders that have items from this seller
-        return Order.objects.filter(order_items__seller=user.seller).distinct().order_by("-created_at")
+        return (
+            Order.objects.filter(order_items__seller=user.seller)
+            .distinct()
+            .order_by("-created_at")
+        )
 
 
 # Order Update (for admin/seller to update status and tracking)
@@ -484,9 +488,86 @@ class OrderUpdateAPIView(generics.RetrieveUpdateAPIView):
         instance = serializer.save()
         # Auto-set timestamps based on status
         from django.utils import timezone
+
         if instance.status == "shipped" and not instance.shipped_at:
             instance.shipped_at = timezone.now()
             instance.save()
         elif instance.status == "delivered" and not instance.delivered_at:
             instance.delivered_at = timezone.now()
             instance.save()
+
+
+class SavedForLaterAPIView(APIView):
+    """
+    GET: List saved for later items for the authenticated user
+    POST: Add item to saved for later
+    DELETE: Remove item from saved for later
+    """
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request, format=None):
+        user = request.user
+        if hasattr(user, "seller"):
+            return Response(
+                {"detail": "Sellers cannot access saved for later."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        saved_items = SavedForLater.objects.filter(user=user)
+        serializer = SavedForLaterSerializer(saved_items, many=True)
+        return Response(serializer.data)
+
+    def post(self, request, format=None):
+        user = request.user
+        if hasattr(user, "seller"):
+            return Response(
+                {"detail": "Sellers cannot save items for later."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        item_id = request.data.get("item_id")
+        quantity = request.data.get("quantity", 1)
+        if not item_id:
+            return Response(
+                {"detail": "item_id is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            item = Item.objects.get(id=item_id)
+            saved_item, created = SavedForLater.objects.get_or_create(
+                user=user, item=item, defaults={"quantity": quantity}
+            )
+            if not created:
+                saved_item.quantity = quantity
+                saved_item.save()
+            serializer = SavedForLaterSerializer(saved_item)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        except Item.DoesNotExist:
+            return Response(
+                {"detail": "Item not found."}, status=status.HTTP_404_NOT_FOUND
+            )
+
+    def delete(self, request, format=None):
+        user = request.user
+        if hasattr(user, "seller"):
+            return Response(
+                {"detail": "Sellers cannot remove from saved for later."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        item_id = request.data.get("item_id")
+        if not item_id:
+            return Response(
+                {"detail": "item_id is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            saved_item = SavedForLater.objects.get(user=user, item_id=item_id)
+            saved_item.delete()
+            return Response(
+                {"detail": "Item removed from saved for later."},
+                status=status.HTTP_200_OK,
+            )
+        except SavedForLater.DoesNotExist:
+            return Response(
+                {"detail": "Item not found in saved for later."},
+                status=status.HTTP_404_NOT_FOUND,
+            )

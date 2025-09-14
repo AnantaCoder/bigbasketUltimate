@@ -109,6 +109,24 @@ class Cart(models.Model):
         return sum(cart_item.total_price for cart_item in self.cart_items.all())
 
 
+# SavedForLater model for items saved for later purchase
+class SavedForLater(models.Model):
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="saved_for_later"
+    )
+    item = models.ForeignKey(
+        Item, on_delete=models.CASCADE, related_name="saved_for_later"
+    )
+    quantity = models.PositiveIntegerField(default=1)
+    added_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("user", "item")
+
+    def __str__(self):
+        return f"{self.user.username} saved {self.item.item_name} for later"
+
+
 # OrderUser model
 class OrderUser(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="order_users")

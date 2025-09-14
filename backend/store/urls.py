@@ -47,5 +47,6 @@ urlpatterns = [
     path("seller-orders/", SellerOrderListAPIView.as_view(), name="seller-orders"),
     # Order update
     path("orders/<int:pk>/update/", OrderUpdateAPIView.as_view(), name="order-update"),
+    path("saved-for-later/", SavedForLaterAPIView.as_view(), name="saved-for-later"),
     path("", include(router.urls)),
 ]

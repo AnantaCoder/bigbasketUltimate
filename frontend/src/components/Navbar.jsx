@@ -366,11 +366,11 @@ function Navbar() {
                 className="bg-red-200 pl-2  py-2 pr-2 rounded-xl"
                 aria-label="Toggle cart dropdown "
               >
-                <BasketIcon />
                 <div
                   onClick={() => navigate("/cart")}
                   className="text-sm hidden xl:block"
                 >
+                <BasketIcon />
                   {/* <div className="text-gray-500 text-xs">
                     {cart?.cart_items?.length || 0} Items • ₹
                     {cart?.total_price || 0}
@@ -421,9 +421,7 @@ function Navbar() {
           {isCategoryOpen && (
             <CategoryDropdown
               onCategorySelect={(categoryId) => {
-                // Close the dropdown
                 setIsCategoryOpen(false);
-                // Navigate to home page with category filter as query param
                 navigate(`/home?category=${categoryId}`);
               }}
             />

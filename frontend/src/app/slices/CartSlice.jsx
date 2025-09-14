@@ -46,7 +46,12 @@ export const addItemToCart = createAsyncThunk(
       // 1. Get token from localStorage
       const token = localStorage.getItem("access_token");
       if (!token) {
-        toast.update(toastId, { render: "Please log in first", type: "error", isLoading: false, autoClose: 3000 });
+        toast.update(toastId, {
+          render: "Please log in first",
+          type: "error",
+          isLoading: false,
+          autoClose: 3000,
+        });
         return rejectWithValue("User not authenticated");
       }
 
@@ -57,7 +62,11 @@ export const addItemToCart = createAsyncThunk(
         },
       };
 
-      const response = await api.post("/store/cart/", { item_ids: [itemId] }, config);
+      const response = await api.post(
+        "/store/cart/",
+        { item_ids: [itemId] },
+        config
+      );
       toast.update(toastId, {
         render: "Item added to cart!",
         type: "success",
@@ -86,7 +95,12 @@ export const removeItemFromCart = createAsyncThunk(
       // 1. Get token from localStorage
       const token = localStorage.getItem("access_token");
       if (!token) {
-        toast.update(toastId, { render: "Please log in first", type: "error", isLoading: false, autoClose: 3000 });
+        toast.update(toastId, {
+          render: "Please log in first",
+          type: "error",
+          isLoading: false,
+          autoClose: 3000,
+        });
         return rejectWithValue("User not authenticated");
       }
 
@@ -127,7 +141,12 @@ export const updateItemQuantity = createAsyncThunk(
       // 1. Get token from localStorage
       const token = localStorage.getItem("access_token");
       if (!token) {
-        toast.update(toastId, { render: "Please log in first", type: "error", isLoading: false, autoClose: 3000 });
+        toast.update(toastId, {
+          render: "Please log in first",
+          type: "error",
+          isLoading: false,
+          autoClose: 3000,
+        });
         return rejectWithValue("User not authenticated");
       }
 
@@ -138,7 +157,11 @@ export const updateItemQuantity = createAsyncThunk(
         },
       };
 
-      const response = await api.patch("/store/cart/", { item_id: itemId, quantity }, config);
+      const response = await api.patch(
+        "/store/cart/",
+        { item_id: itemId, quantity },
+        config
+      );
       toast.update(toastId, {
         render: "Quantity updated",
         type: "success",
@@ -160,14 +183,202 @@ export const updateItemQuantity = createAsyncThunk(
 
 // Update quantity in cart
 export const updateQuantityInCart = createAsyncThunk(
-  'cart/updateQuantity',
+  "cart/updateQuantity",
   async ({ itemId, quantity }) => {
     const response = await api.updateQuantity(itemId, quantity);
     return response.data;
   }
 );
 
+// Fetch saved for later items
+export const fetchSavedForLater = createAsyncThunk(
+  "cart/fetchSavedForLater",
+  async (_, { rejectWithValue }) => {
+    try {
+      const token = localStorage.getItem("access_token");
+      if (!token) {
+        return rejectWithValue("User not authenticated");
+      }
+      const config = {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      };
+      const response = await api.get("/store/saved-for-later/", config);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data || "Failed to fetch saved for later"
+      );
+    }
+  }
+);
 
+// Save item for later (remove from cart and add to saved)
+export const saveItemForLater = createAsyncThunk(
+  "cart/saveItemForLater",
+  async (itemId, { rejectWithValue, dispatch }) => {
+    const toastId = toast.loading("Saving for later...");
+    try {
+      const token = localStorage.getItem("access_token");
+      if (!token) {
+        toast.update(toastId, {
+          render: "Please log in first",
+          type: "error",
+          isLoading: false,
+          autoClose: 3000,
+        });
+        return rejectWithValue("User not authenticated");
+      }
+      const config = {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      };
+
+      // First, remove from cart
+      await api.delete("/store/cart/", {
+        ...config,
+        data: { item_ids: [itemId] },
+      });
+
+      // Then, add to saved for later
+      const response = await api.post(
+        "/store/saved-for-later/",
+        { item_id: itemId },
+        config
+      );
+
+      toast.update(toastId, {
+        render: "Item saved for later!",
+        type: "success",
+        isLoading: false,
+        autoClose: 2000,
+      });
+
+      // Refetch cart and saved for later
+      dispatch(fetchCart());
+      dispatch(fetchSavedForLater());
+
+      return response.data;
+    } catch (error) {
+      toast.update(toastId, {
+        render: error.response?.data?.detail || "Failed to save for later",
+        type: "error",
+        isLoading: false,
+        autoClose: 3000,
+      });
+      return rejectWithValue(error.response?.data);
+    }
+  }
+);
+
+// Remove from saved for later
+export const removeFromSaved = createAsyncThunk(
+  "cart/removeFromSaved",
+  async (itemId, { rejectWithValue, dispatch }) => {
+    const toastId = toast.loading("Removing from saved...");
+    try {
+      const token = localStorage.getItem("access_token");
+      if (!token) {
+        toast.update(toastId, {
+          render: "Please log in first",
+          type: "error",
+          isLoading: false,
+          autoClose: 3000,
+        });
+        return rejectWithValue("User not authenticated");
+      }
+      const config = {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        data: { item_id: itemId },
+      };
+
+      await api.delete("/store/saved-for-later/", config);
+
+      toast.update(toastId, {
+        render: "Item removed from saved",
+        type: "success",
+        isLoading: false,
+        autoClose: 2000,
+      });
+
+      // Refetch saved for later
+      dispatch(fetchSavedForLater());
+
+      return itemId;
+    } catch (error) {
+      toast.update(toastId, {
+        render: error.response?.data?.detail || "Failed to remove from saved",
+        type: "error",
+        isLoading: false,
+        autoClose: 3000,
+      });
+      return rejectWithValue(error.response?.data);
+    }
+  }
+);
+
+// Move to cart from saved (remove from saved and add to cart)
+export const moveToCartFromSaved = createAsyncThunk(
+  "cart/moveToCartFromSaved",
+  async (itemId, { rejectWithValue, dispatch }) => {
+    const toastId = toast.loading("Moving to cart...");
+    try {
+      const token = localStorage.getItem("access_token");
+      if (!token) {
+        toast.update(toastId, {
+          render: "Please log in first",
+          type: "error",
+          isLoading: false,
+          autoClose: 3000,
+        });
+        return rejectWithValue("User not authenticated");
+      }
+      const config = {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      };
+
+      // First, remove from saved
+      await api.delete("/store/saved-for-later/", {
+        ...config,
+        data: { item_id: itemId },
+      });
+
+      // Then, add to cart
+      const response = await api.post(
+        "/store/cart/",
+        { item_ids: [itemId] },
+        config
+      );
+
+      toast.update(toastId, {
+        render: "Item moved to cart!",
+        type: "success",
+        isLoading: false,
+        autoClose: 2000,
+      });
+
+      // Refetch cart and saved for later
+      dispatch(fetchCart());
+      dispatch(fetchSavedForLater());
+
+      return response.data;
+    } catch (error) {
+      toast.update(toastId, {
+        render: error.response?.data?.detail || "Failed to move to cart",
+        type: "error",
+        isLoading: false,
+        autoClose: 3000,
+      });
+      return rejectWithValue(error.response?.data);
+    }
+  }
+);
 
 // ## Cart Slice Definition
 const cartSlice = createSlice({
@@ -180,38 +391,6 @@ const cartSlice = createSlice({
       state.status = "idle";
       state.error = null;
     },
-    saveItemForLater: (state, action) => {
-      const itemId = action.payload;
-      if (state.cart && state.cart.items) {
-        const itemIndex = state.cart.items.findIndex(item => item.id === itemId);
-        if (itemIndex !== -1) {
-          const [item] = state.cart.items.splice(itemIndex, 1);
-          state.savedForLater.push(item);
-          // Update total price
-          state.cart.total_price = (parseFloat(state.cart.total_price) - parseFloat(item.price * (item.quantity || 1))).toFixed(2);
-        }
-      }
-    },
-    moveToCartFromSaved: (state, action) => {
-      const itemId = action.payload;
-      const savedIndex = state.savedForLater.findIndex(item => item.id === itemId);
-      if (savedIndex !== -1) {
-        const [item] = state.savedForLater.splice(savedIndex, 1);
-        if (state.cart && state.cart.items) {
-          state.cart.items.push(item);
-          state.cart.total_price = (parseFloat(state.cart.total_price) + parseFloat(item.price * (item.quantity || 1))).toFixed(2);
-        } else {
-          state.cart = {
-            items: [item],
-            total_price: (item.price * (item.quantity || 1)).toFixed(2),
-          };
-        }
-      }
-    },
-    removeFromSaved: (state, action) => {
-      const itemId = action.payload;
-      state.savedForLater = state.savedForLater.filter(item => item.id !== itemId);
-    }
   },
   extraReducers: (builder) => {
     builder
@@ -224,9 +403,9 @@ const cartSlice = createSlice({
         state.cart = action.payload;
         // Transform cart_items to items for frontend compatibility
         if (action.payload && action.payload.cart_items) {
-          action.payload.items = action.payload.cart_items.map(cartItem => ({
+          action.payload.items = action.payload.cart_items.map((cartItem) => ({
             ...cartItem.item,
-            quantity: cartItem.quantity
+            quantity: cartItem.quantity,
           }));
         }
       })
@@ -240,9 +419,9 @@ const cartSlice = createSlice({
         state.cart = action.payload;
         // Transform cart_items to items for frontend compatibility
         if (action.payload && action.payload.cart_items) {
-          action.payload.items = action.payload.cart_items.map(cartItem => ({
+          action.payload.items = action.payload.cart_items.map((cartItem) => ({
             ...cartItem.item,
-            quantity: cartItem.quantity
+            quantity: cartItem.quantity,
           }));
         }
       })
@@ -254,9 +433,13 @@ const cartSlice = createSlice({
       .addCase(removeItemFromCart.fulfilled, (state, action) => {
         const removedItemId = action.payload;
         if (state.cart && state.cart.items) {
-          const removedItem = state.cart.items.find(item => item.id === removedItemId);
+          const removedItem = state.cart.items.find(
+            (item) => item.id === removedItemId
+          );
           if (removedItem) {
-              state.cart.total_price = (parseFloat(state.cart.total_price) - parseFloat(removedItem.price)).toFixed(2);
+            state.cart.total_price = (
+              parseFloat(state.cart.total_price) - parseFloat(removedItem.price)
+            ).toFixed(2);
           }
           state.cart.items = state.cart.items.filter(
             (item) => item.id !== removedItemId
@@ -272,9 +455,9 @@ const cartSlice = createSlice({
         state.cart = action.payload;
         // Transform cart_items to items for frontend compatibility
         if (action.payload && action.payload.cart_items) {
-          action.payload.items = action.payload.cart_items.map(cartItem => ({
+          action.payload.items = action.payload.cart_items.map((cartItem) => ({
             ...cartItem.item,
-            quantity: cartItem.quantity
+            quantity: cartItem.quantity,
           }));
         }
       })
@@ -288,11 +471,46 @@ const cartSlice = createSlice({
       })
       .addCase(updateQuantityInCart.rejected, (state, action) => {
         state.error = action.payload;
+      })
+
+      // Fetch Saved For Later
+      .addCase(fetchSavedForLater.fulfilled, (state, action) => {
+        state.savedForLater = action.payload.map((savedItem) => ({
+          ...savedItem.item,
+          quantity: savedItem.quantity,
+        }));
+      })
+      .addCase(fetchSavedForLater.rejected, (state, action) => {
+        state.error = action.payload;
+      })
+
+      // Save Item For Later
+      .addCase(saveItemForLater.fulfilled, () => {
+        // State is updated via refetch
+      })
+      .addCase(saveItemForLater.rejected, (state, action) => {
+        state.error = action.payload;
+      })
+
+      // Remove From Saved
+      .addCase(removeFromSaved.fulfilled, () => {
+        // State is updated via refetch
+      })
+      .addCase(removeFromSaved.rejected, (state, action) => {
+        state.error = action.payload;
+      })
+
+      // Move To Cart From Saved
+      .addCase(moveToCartFromSaved.fulfilled, () => {
+        // State is updated via refetch
+      })
+      .addCase(moveToCartFromSaved.rejected, (state, action) => {
+        state.error = action.payload;
       });
   },
 });
 
-export const { clearCart, saveItemForLater, moveToCartFromSaved, removeFromSaved } = cartSlice.actions;
+export const { clearCart } = cartSlice.actions;
 
 // Selectors
 export const selectCart = (state) => state.cart.cart;

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from store.models import Item, Category, Cart, CartItem, OrderUser, OrderItem, Order
+from store.models import *
 from accounts.models import Seller
 from supabase import create_client, Client
 from django.conf import settings
@@ -266,7 +266,9 @@ class OrderUserSerializer(serializers.ModelSerializer):
         if not value.isdigit():
             raise serializers.ValidationError("Phone number must contain only digits.")
         if len(value) < 10 or len(value) > 15:
-            raise serializers.ValidationError("Phone number must be between 10 and 15 digits.")
+            raise serializers.ValidationError(
+                "Phone number must be between 10 and 15 digits."
+            )
         return value
 
     def validate_pincode(self, value):
@@ -311,6 +313,28 @@ class OrderItemSerializer(serializers.ModelSerializer):
 
     def get_total_price(self, obj):
         return obj.total_price
+
+
+# ==============================
+# SavedForLater Serializer
+# ==============================
+class SavedForLaterSerializer(serializers.ModelSerializer):
+    item = ItemSerializer(read_only=True)
+    item_id = serializers.PrimaryKeyRelatedField(
+        queryset=Item.objects.all(), source="item", write_only=True
+    )
+
+    class Meta:
+        model = SavedForLater
+        fields = [
+            "id",
+            "user",
+            "item",
+            "item_id",
+            "quantity",
+            "added_at",
+        ]
+        read_only_fields = ["id", "user", "added_at"]
 
 
 # ==============================
