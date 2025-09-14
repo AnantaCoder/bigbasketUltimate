@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
 import Sidebar from "../components/Sidebar";
 import api from "../services/api";
+import OrderTrackingModal from "../components/OrderTrackingModal";
 
 export default function PastOrders() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [selectedOrder, setSelectedOrder] = useState(null);
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -68,7 +70,10 @@ export default function PastOrders() {
                       </p>
                     )}
                   </div>
-                  <button className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
+                  <button
+                    onClick={() => setSelectedOrder(order)}
+                    className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+                  >
                     View Details
                   </button>
                 </div>
@@ -77,6 +82,12 @@ export default function PastOrders() {
           </div>
         )}
       </div>
+      {selectedOrder && (
+        <OrderTrackingModal
+          order={selectedOrder}
+          onClose={() => setSelectedOrder(null)}
+        />
+      )}
     </div>
   );
 }

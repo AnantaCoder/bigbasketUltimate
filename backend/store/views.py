@@ -332,9 +332,17 @@ class OrderListCreateAPIView(generics.ListCreateAPIView):
 
 
 class OrderRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Order.objects.all()
     serializer_class = OrderSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_staff:
+            return Order.objects.all()
+        elif hasattr(user, "seller"):
+            return Order.objects.filter(order_items__seller=user.seller).distinct()
+        else:
+            return Order.objects.none()
 
 
 class CheckoutAPIView(APIView):

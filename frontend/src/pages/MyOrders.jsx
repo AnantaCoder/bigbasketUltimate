@@ -96,7 +96,10 @@ export default function MyOrders() {
                     </button>
                   )}
                   {["delivered", "cancelled"].includes(order.status) && (
-                    <button className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
+                    <button
+                      onClick={() => setSelectedOrder(order)}
+                      className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+                    >
                       View Details
                     </button>
                   )}

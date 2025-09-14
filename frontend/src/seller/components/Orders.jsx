@@ -64,7 +64,7 @@ const Orders = () => {
     setLoading(true);
     setError("");
     try {
-      await api.patch(`/store/orders/${editOrder.id}/`, form);
+      await api.patch(`/store/orders/${editOrder.id}/update/`, form);
       closeModal();
       fetchOrders();
     } catch {
