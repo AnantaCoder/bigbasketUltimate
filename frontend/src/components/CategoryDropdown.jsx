@@ -1,10 +1,12 @@
-import React, { useEffect, useState } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
-import { fetchCategories } from '../app/slices/CategorySlice';
+import React, { useEffect, useState } from "react";
+import { useSelector, useDispatch } from "react-redux";
+import { fetchCategories } from "../app/slices/CategorySlice";
 
 const CategoryDropdown = ({ onCategorySelect }) => {
   const dispatch = useDispatch();
-  const { categories, loading, error } = useSelector((state) => state.categories);
+  const { categories, loading, error } = useSelector(
+    (state) => state.categories
+  );
   const [activeCategoryIndex, setActiveCategoryIndex] = useState(0);
 
   useEffect(() => {
@@ -40,14 +42,14 @@ const CategoryDropdown = ({ onCategorySelect }) => {
   const activeCategory = categories[activeCategoryIndex];
 
   return (
-    <div className="absolute top-full left-0 mt-2 w-full max-w-5xl bg-white shadow-lg rounded-lg flex z-50 border border-gray-200">
+    <div className="absolute top-full left-0 mt-2 w-full max-w-4xl bg-white shadow-lg rounded-lg flex z-50 border border-gray-200">
       {/* Left column: main categories */}
-      <div className="w-1/4 bg-gray-900 text-white rounded-l-lg overflow-y-auto max-h-96">
+      <div className="w-1/2 bg-gray-900 text-white rounded-l-lg overflow-y-auto max-h-96">
         {categories.map((cat, index) => (
           <div
             key={cat.id}
             className={`p-4 cursor-pointer hover:bg-gray-700 ${
-              index === activeCategoryIndex ? 'bg-gray-700 font-bold' : ''
+              index === activeCategoryIndex ? "bg-gray-700 font-bold" : ""
             }`}
             onMouseEnter={() => setActiveCategoryIndex(index)}
             onClick={() => onCategorySelect && onCategorySelect(cat.id)}
@@ -57,16 +59,30 @@ const CategoryDropdown = ({ onCategorySelect }) => {
         ))}
       </div>
 
-      {/* Middle column: subcategories */}
-      <div className="w-1/4 bg-gray-100 p-4 overflow-y-auto max-h-96">
-        {activeCategory.subcategories && activeCategory.subcategories.length > 0 ? (
+      {console.log("active categories ",activeCategory )}
+
+      {/* Right column: subcategories */}
+      <div className="w-1/2 bg-gray-100 p-4 overflow-y-auto max-h-96 rounded-r-lg">
+        {activeCategory.subcategories &&
+        activeCategory.subcategories.length > 0 ? (
           activeCategory.subcategories.map((subcat) => (
             <div key={subcat.id} className="mb-3">
-              <h3 className="font-semibold mb-2 cursor-pointer hover:text-emerald-600" onClick={() => onCategorySelect && onCategorySelect(subcat.id)}>{subcat.name}</h3>
+              <h3
+                className="font-semibold mb-2 cursor-pointer hover:text-emerald-600"
+                onClick={() => onCategorySelect && onCategorySelect(subcat.id)}
+              >
+                {subcat.name}
+              </h3>
               {subcat.subcategories && subcat.subcategories.length > 0 && (
                 <ul className="list-disc list-inside text-gray-700">
                   {subcat.subcategories.map((subsubcat) => (
-                    <li key={subsubcat.id} className="mb-1 cursor-pointer hover:text-emerald-600" onClick={() => onCategorySelect && onCategorySelect(subsubcat.id)}>
+                    <li
+                      key={subsubcat.id}
+                      className="mb-1 cursor-pointer hover:text-emerald-600"
+                      onClick={() =>
+                        onCategorySelect && onCategorySelect(subsubcat.id)
+                      }
+                    >
                       {subsubcat.name}
                     </li>
                   ))}
@@ -78,9 +94,6 @@ const CategoryDropdown = ({ onCategorySelect }) => {
           <p className="text-gray-500">No subcategories</p>
         )}
       </div>
-
-      {/* Right column: placeholder or further subcategories */}
-      
     </div>
   );
 };

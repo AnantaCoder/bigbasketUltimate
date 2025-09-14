@@ -45,7 +45,6 @@ const ProductDetail = () => {
         const { id } = params;
         let apiItem = location.state?.item;
 
-        // If the item data wasn't passed via navigation state, fetch it from the API
         if (!apiItem && id) {
           const response = await fetch(`/store/new-items/${id}/`);
           if (!response.ok) {
@@ -55,7 +54,6 @@ const ProductDetail = () => {
         }
 
         if (apiItem) {
-          // Always map the raw API item to the structure the component expects
           const mappedProduct = mapApiItemToProduct(apiItem);
           setProduct(mappedProduct);
           setSelectedImage(mappedProduct.images?.[0] || "");
@@ -73,9 +71,10 @@ const ProductDetail = () => {
     loadProduct();
   }, [params.id, location.state?.item]);
 
-  const handleAddToCart = (qty = 1) => {
-    const payload = { id: product.id, quantity: qty, item: product.raw || product };
-    dispatch(addItemToCart(payload));
+  const handleAddToCart = () => {
+
+    
+    dispatch(addItemToCart(product.id));
   };
   
   if (loading) {
@@ -86,14 +85,7 @@ const ProductDetail = () => {
     );
   }
 
-  // if (error) {
-  //   return (
-  //     <div className="w-full min-h-screen flex flex-col items-center justify-center p-6">
-  //       <p className="text-red-500 mb-4">Error: {error}</p>
-  //       <button onClick={() => navigate(-1)} className="px-4 py-2 bg-gray-200 rounded">Go back</button>
-  //     </div>
-  //   );
-  // }
+  
 
   if (!product || error) {
     return (

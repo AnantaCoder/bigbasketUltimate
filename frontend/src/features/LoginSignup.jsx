@@ -158,7 +158,7 @@ const LoginSignupModal = ({ closeModal }) => {
 
   return (
     <div className="fixed inset-0 bg-transparent backdrop-blur-sm flex items-center justify-center p-4 z-50 transition-opacity duration-300 ease-in-out">
-      <div className="rounded-lg shadow-2xl overflow-hidden w-full max-w-2xl grid grid-cols-1 md:grid-cols-10 relative transform transition-all duration-300 ease-in-out scale-95">
+      <div className="rounded-lg shadow-2xl overflow-hidden w-full max-w-4xl grid grid-cols-1 md:grid-cols-10 relative transform transition-all duration-300 ease-in-out scale-95">
         {/* Close Button */}
         <button onClick={closeModal} className="absolute top-4 right-4 text-gray-400 hover:text-gray-800 z-10 md:text-white">
           <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -181,10 +181,11 @@ const LoginSignupModal = ({ closeModal }) => {
           <div className="flex items-center space-x-4">
             <span className="text-gray-700">Find us on</span>
             <button aria-label="Google Play" className="p-2 border rounded-md hover:bg-gray-200">
-              <GooglePlayIcon />
+              <img src="/playstore.png" className="h-8 scale-170"/>
             </button>
             <button aria-label="Apple Store" className="p-2 border rounded-md hover:bg-gray-200">
-              <AppleIcon />
+              <img src="/apple.png" className="h-8 scale-100"/>
+              
             </button>
           </div>
         </div>
@@ -295,7 +296,7 @@ const LoginSignupModal = ({ closeModal }) => {
                     onChange={handleInputChange}
                     placeholder="Enter Email Id"
                     required
-                    className="w-full px-4 py-3 mt-4 bg-white text-white rounded-md border-2 border-gray-600"
+                    className="w-full px-4 py-3 mt-4 bg-white text-gray-900 rounded-md border-2 border-gray-600"
                   />
                   <input
                     name="password"
@@ -304,7 +305,7 @@ const LoginSignupModal = ({ closeModal }) => {
                     onChange={handleInputChange}
                     placeholder="Create Password"
                     required
-                    className="w-full px-4 py-3 mt-4 bg-white text-white rounded-md border-2 border-gray-600"
+                    className="w-full px-4 py-3 mt-4 bg-white text-gray-900 rounded-md border-2 border-gray-600"
                   />
                   {renderError()}
                   <button
