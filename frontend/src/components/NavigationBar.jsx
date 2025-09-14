@@ -1,6 +1,5 @@
 import React from 'react';
 
-// A simple SVG for the NeuPass logo to keep everything in one file.
 export const NeuPassLogo = () => (
   <svg
     width="24"

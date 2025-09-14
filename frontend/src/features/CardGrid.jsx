@@ -108,10 +108,6 @@ const CardGrid = ({
     [dispatch, categoryId, JSON.stringify(filters), sortBy, search]
   );
 
-  useEffect(() => {
-    loadPage(1);
-  }, [loadPage]);
-
   // Reset items when category, filters, sortBy, or search changes
   useEffect(() => {
     setItems([]);
@@ -119,6 +115,11 @@ const CardGrid = ({
     setHasNext(true);
     loadPage(1);
   }, [categoryId, JSON.stringify(filters), sortBy, search]);
+
+  // Initial load on mount
+  useEffect(() => {
+    loadPage(1);
+  }, []);
 
   useEffect(() => {
     if (!sentinelRef.current) return;

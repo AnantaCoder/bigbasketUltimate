@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useSearchParams } from "react-router-dom";
+import Navbar from "../components/Navbar"; // Assuming Navbar component from previous prompt
 import CardGrid from "../features/CardGrid";
 import RefinedByDropdowns from "../components/RefinedByDropdowns";
-import { NavigationBar } from "../components/NavigationBar";
 import { fetchCategories } from "../app/slices/CategorySlice";
+import { NavigationBar } from "../components/NavigationBar";
 
 function HomePage() {
   const dispatch = useDispatch();
@@ -35,9 +36,6 @@ function HomePage() {
     setSelectedCategoryId(categoryParam ? parseInt(categoryParam, 10) : null);
     setSearchQuery(searchParam || null);
   }, [searchParams]);
-
-
-
 
   // Sorting option click
   const handleOptionClick = (option) => {
@@ -75,32 +73,29 @@ function HomePage() {
       : setSearchParams({});
   };
 
-  // Show all categories
   const handleShowAll = () => {
     setSelectedCategoryId(null);
     setSearchParams({});
   };
 
-  // Toggle "Show more"
   const toggleShowMore = () => {
     setShowAllCategories((prev) => !prev);
   };
 
-  // Handle filters change from RefinedByDropdowns
-  const handleFiltersChange = (newFilters) => {
+  const handleFiltersChange = useCallback((newFilters) => {
     setFilters(newFilters);
-  };
+  }, []);
 
   return (
     <>
-      <NavigationBar />
+      <NavigationBar/>
       <div className="flex">
         {/* Premium Sidebar */}
         <aside className="hidden md:block w-72 p-6 h-screen overflow-y-auto sticky top-0 bg-gradient-to-b from-gray-50 to-gray-100 border-r border-gray-200 shadow-lg sidebar-hidden">
           <div className="mb-8 pb-6 border-b border-gray-200">
             <h3 className="text-lg font-semibold text-gray-800 tracking-wide uppercase mb-4 flex items-center">
               <svg
-                className="w-5 h-5 mr-2 text-emerald-600"
+                className="w-5 h-5 mr-2 text-[#5E9400]"
                 fill="currentColor"
                 viewBox="0 0 20 20"
               >
@@ -117,14 +112,14 @@ function HomePage() {
               <li
                 className={`group cursor-pointer py-2 px-3 rounded-lg transition-all duration-200 ease-in-out ${
                   selectedCategoryId === null
-                    ? "bg-emerald-50 text-emerald-700 font-medium border-l-4 border-emerald-500 shadow-sm"
+                    ? "bg-[#5E9400]/10 text-[#5E9400] font-medium border-l-4 border-[#5E9400] shadow-sm"
                     : "hover:bg-gray-100 hover:text-gray-900 hover:translate-x-1"
                 }`}
                 onClick={handleShowAll}
               >
                 <div className="flex items-center">
                   <svg
-                    className="w-4 h-4 mr-3 text-gray-400 group-hover:text-emerald-500"
+                    className="w-4 h-4 mr-3 text-gray-400 group-hover:text-[#5E9400]"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -159,14 +154,14 @@ function HomePage() {
                         key={category.id}
                         className={`group cursor-pointer py-2 px-3 rounded-lg transition-all duration-200 ease-in-out ${
                           selectedCategoryId === category.id
-                            ? "bg-emerald-50 text-emerald-700 font-medium border-l-4 border-emerald-500 shadow-sm"
+                            ? "bg-[#5E9400]/10 text-[#5E9400] font-medium border-l-4 border-[#5E9400] shadow-sm"
                             : "hover:bg-gray-100 hover:text-gray-900 hover:translate-x-1"
                         }`}
                         onClick={() => handleCategoryClick(category.id)}
                       >
                         <div className="flex items-center">
                           <svg
-                            className="w-4 h-4 mr-3 text-gray-400 group-hover:text-emerald-500"
+                            className="w-4 h-4 mr-3 text-gray-400 group-hover:text-[#5E9400]"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -188,7 +183,7 @@ function HomePage() {
             {!categoriesLoading && categories.length > 5 && (
               <button
                 onClick={toggleShowMore}
-                className="mt-4 flex items-center text-sm text-gray-500 hover:text-emerald-600 transition-colors duration-200"
+                className="mt-4 flex items-center text-sm text-gray-500 hover:text-[#5E9400] transition-colors duration-200"
               >
                 {showAllCategories ? (
                   <>
@@ -229,7 +224,7 @@ function HomePage() {
           <div className="mt-8">
             <h3 className="text-lg font-semibold text-gray-800 tracking-wide uppercase mb-4 flex items-center">
               <svg
-                className="w-5 h-5 mr-2 text-emerald-600"
+                className="w-5 h-5 mr-2 text-[#5E9400]"
                 fill="currentColor"
                 viewBox="0 0 20 20"
               >

@@ -75,7 +75,7 @@ const Settings = () => {
     setError("");
     try {
       if (editSeller) {
-        await api.patch(`/auth/sellers/${editSeller.user_email}/`, form); // user_email as PK
+        await api.patch(`/auth/sellers/${editSeller.user_email}/`, form); 
       } else {
         await api.post("/auth/sellers/", form);
       }

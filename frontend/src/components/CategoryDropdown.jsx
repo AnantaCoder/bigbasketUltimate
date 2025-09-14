@@ -80,9 +80,7 @@ const CategoryDropdown = ({ onCategorySelect }) => {
       </div>
 
       {/* Right column: placeholder or further subcategories */}
-      <div className="w-1/2 bg-white p-4 overflow-y-auto max-h-96 rounded-r-lg">
-        {/* You can extend this to show further nested subcategories or featured items */}
-      </div>
+      
     </div>
   );
 };
