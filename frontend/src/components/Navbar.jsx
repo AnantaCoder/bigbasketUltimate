@@ -410,8 +410,7 @@ function Navbar() {
             aria-expanded={isCategoryOpen}
           >
             <div className=" justify-start pl-2 pr-9 flex gap-2 items-start ">
-              <span className="">Shop By</span>
-              <div className="text-xl">Category</div>
+              <span className="">Shop By Category</span>
             </div>
             <ChevronDownIcon
               className={`h-5 w-5 transition-transform duration-300 ${
