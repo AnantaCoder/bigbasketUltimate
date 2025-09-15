@@ -3,7 +3,7 @@ import { useSelector, useDispatch } from "react-redux";
 import { fetchCategories } from "../app/slices/CategorySlice";
 import { useNavigate } from "react-router-dom";
 
-const CategoryDropdown = ({ onCategorySelect }) => {
+const CategoryDropdown = ({ onClose }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { categories, loading, error } = useSelector(
@@ -37,14 +37,13 @@ const CategoryDropdown = ({ onCategorySelect }) => {
     return null;
   }
 
-  // Assuming categories have a structure like:
-  // { id, name, subcategories: [{ id, name, subcategories: [...] }] }
-  // For simplicity, we show only two levels here.
-
   const activeCategory = categories[activeCategoryIndex];
 
   const handleSelect = (id) => {
     navigate(`/home?category=${id}`);
+    if (onClose) {
+      onClose();
+    }
   };
 
   return (

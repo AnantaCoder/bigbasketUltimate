@@ -402,14 +402,14 @@ function Navbar() {
 
       {/* Bottom Nav - Desktop */}
       <div className="container mx-auto px-4 hidden lg:block bg-gradient-to-r from-gray-50 to-white relative">
-        <div className="flex items-center justify-between py-3">
+        <div className="flex items-center justify-between py-3 ml-30">
           <button
             onClick={() => setIsCategoryOpen(!isCategoryOpen)}
             className="bg-gradient-to-r from-[#5E9400] to-[#5E9400] hover:from-[#5E9400] hover:to-[#5E9400] text-white font-bold py-3 px-6 rounded-xl flex items-center text-sm transition-all duration-300 shadow-md hover:shadow-lg hover:scale-105"
             aria-haspopup="true"
             aria-expanded={isCategoryOpen}
           >
-            <div className=" justify-start pl-2 pr-9 flex gap-2 items-start ">
+            <div className=" justify-start  pl-2 pr-9 flex gap-2 items-start ">
               <span className="">Shop By Category</span>
             </div>
             <ChevronDownIcon
