@@ -193,7 +193,7 @@ const RefinedByDropdowns = ({ onFiltersChange }) => {
           >
             {item.title}
             <span className="material-icons">
-              {openIndex === index ? "↑" : "↓"}
+              {openIndex === index ? "↑" : "⌄"}
             </span>
           </button>
           {openIndex === index && (

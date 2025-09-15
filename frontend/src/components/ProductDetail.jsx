@@ -184,7 +184,7 @@ const ProductDetail = () => {
                 {/* Zoom Overlay */}
                 {isZooming && (
                   <div
-                    className="fixed top-[100px] left-[calc(50%+200px)] w-96 h-96 border border-gray-300 rounded-lg shadow-lg bg-white overflow-hidden z-50 pointer-events-none"
+                    className="fixed top-[281px] left-[calc(33%+300px)] w-120 h-135 border border-gray-300 rounded-lg shadow-lg bg-white overflow-hidden z-50 pointer-events-none"
                     style={{
                       backgroundImage: `url(${currentImage})`,
                       backgroundRepeat: 'no-repeat',

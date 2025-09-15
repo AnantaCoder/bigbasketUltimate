@@ -44,7 +44,7 @@ const CategoryDropdown = ({ onCategorySelect }) => {
   const activeCategory = categories[activeCategoryIndex];
 
   const handleSelect = (id) => {
-    navigate(`/category/${id}`);
+    navigate(`/home?category=${id}`);
   };
 
   return (
@@ -65,7 +65,7 @@ const CategoryDropdown = ({ onCategorySelect }) => {
         ))}
       </div>
 
-      {console.log("active categories ",activeCategory )}
+      {console.log("active categories ", activeCategory)}
 
       {/* Right column: subcategories */}
       <div className="w-1/2 bg-gray-100 p-4 overflow-y-auto max-h-96 rounded-r-lg">

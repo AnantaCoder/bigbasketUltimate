@@ -4,14 +4,15 @@ import api from "../../services/api";
 
 export const loginUser = createAsyncThunk(
   "auth/login",
-  async ({ email, password }, { rejectWithValue }) => {
+  async ({ email, password, otp }, { rejectWithValue }) => {
     const toastId = toast.loading("Logging you in ⌛...", {
       autoClose: false,
       closeOnClick: false,
       draggable: false,
     });
     try {
-      const response = await api.post("/auth/login/", { email, password });
+      const payload = otp ? { email, otp } : { email, password };
+      const response = await api.post("/auth/login/", payload);
       const { access, refresh, user, role } = response.data;
 
       localStorage.setItem("access_token", access);
@@ -37,7 +38,6 @@ export const loginUser = createAsyncThunk(
     }
   }
 );
-
 
 export const registerUser = createAsyncThunk(
   "auth/register",
@@ -71,7 +71,8 @@ export const registerUser = createAsyncThunk(
       return response.data;
     } catch (err) {
       toast.update(toastId, {
-        render: err.response?.data.detail || err.message || "Registration failed",
+        render:
+          err.response?.data.detail || err.message || "Registration failed",
         type: "error",
         isLoading: false,
         autoClose: 3000,
@@ -80,7 +81,6 @@ export const registerUser = createAsyncThunk(
     }
   }
 );
-
 
 export const verifyOtp = createAsyncThunk(
   "auth/verifyOtp",
@@ -118,6 +118,37 @@ export const verifyOtp = createAsyncThunk(
   }
 );
 
+export const requestOTP = createAsyncThunk(
+  "auth/requestOTP",
+  async ({ email }, { rejectWithValue }) => {
+    const toastId = toast.loading("Sending OTP ⌛...", {
+      autoClose: false,
+      closeOnClick: false,
+      draggable: false,
+    });
+    try {
+      const response = await api.post("/auth/request-otp/", { email });
+
+      toast.update(toastId, {
+        render: "OTP sent to your email 📧",
+        type: "success",
+        isLoading: false,
+        autoClose: 5000,
+      });
+
+      return response.data;
+    } catch (err) {
+      toast.update(toastId, {
+        render: err.response?.data.detail || "Failed to send OTP ❌",
+        type: "error",
+        isLoading: false,
+        autoClose: 3000,
+      });
+      return rejectWithValue(err.response?.data || err.message);
+    }
+  }
+);
+
 export const refreshToken = createAsyncThunk(
   "auth/refresh",
   async (_, { rejectWithValue }) => {
@@ -139,7 +170,6 @@ export const refreshToken = createAsyncThunk(
     }
   }
 );
-
 
 export const logoutUser = createAsyncThunk("auth/logout", async () => {
   try {

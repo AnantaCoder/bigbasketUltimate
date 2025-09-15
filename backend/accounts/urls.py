@@ -3,6 +3,7 @@ from rest_framework.routers import DefaultRouter
 from accounts.views import (
     RegisterView,
     VerifyOTPView,
+    RequestOTPView,
     LoginView,
     LogoutView,
     UserAdminViewSet,
@@ -18,6 +19,7 @@ router.register(r"sellers", SellerAdminViewSet, basename="seller-admin")
 urlpatterns = [
     path("register/", RegisterView.as_view(), name="register"),
     path("verify-otp/", VerifyOTPView.as_view(), name="verify-otp"),
+    path("request-otp/", RequestOTPView.as_view(), name="request-otp"),
     path("login/", LoginView.as_view(), name="login"),
     path("logout/", LogoutView.as_view(), name="logout"),
     path("dashboard-stats/", DashboardStatsView.as_view(), name="dashboard-stats"),
