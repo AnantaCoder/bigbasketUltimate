@@ -48,9 +48,10 @@ class UserManager(BaseUserManager):
     
 class User(AbstractUser):
     """extends the abstract user class"""
-    
+
     username = None
     email = models.EmailField(_('email address') , unique=True)
+    phone = models.CharField(max_length=20, blank=True, null=True)
     is_email_verified = models.BooleanField(default=False)
     
    

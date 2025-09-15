@@ -4,6 +4,7 @@ from store.models import Item, Category, Cart, CartItem, OrderUser, OrderItem, O
 from store.serializers import (
     ItemSerializer,
     CategorySerializer,
+    CategoryBreadcrumbSerializer,
     CartSerializer,
     OrderUserSerializer,
     OrderItemSerializer,
@@ -24,8 +25,11 @@ from .serializers import ItemSerializer
 from rest_framework.filters import SearchFilter
 from django_filters.rest_framework import DjangoFilterBackend
 
+from rest_framework.generics import ListAPIView
+from .models import Item, Category
+from .serializers import ItemSerializer
 
-class CategoryListAPIView(APIView):
+class CategoryListCreateAPIView(APIView):
 
     permission_classes = [permissions.AllowAny]
 
@@ -33,6 +37,25 @@ class CategoryListAPIView(APIView):
         categories = Category.objects.filter(is_active=True, parent=None)
         serializer = CategorySerializer(categories, many=True)
         return response.Response(serializer.data)
+
+    def post(self, request, format=None):
+        serializer = CategorySerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return response.Response(serializer.data, status=status.HTTP_201_CREATED)
+        return response.Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class CategoryDetailAPIView(generics.RetrieveAPIView):
+    queryset = Category.objects.all()
+    serializer_class = CategorySerializer
+    permission_classes = [permissions.AllowAny]
+
+
+class CategoryBreadcrumbAPIView(generics.RetrieveAPIView):
+    queryset = Category.objects.all()
+    serializer_class = CategoryBreadcrumbSerializer
+    permission_classes = [permissions.AllowAny]
 
 
 # views for single category will be there as well
@@ -46,15 +69,36 @@ class ItemListCreateAPIView(APIView):
             items = Item.objects.filter(seller=user.seller)
         else:
             items = Item.objects.all()
-        serializer = ItemSerializer(items, many=True)
+        serializer = ItemSerializer(items, many=True, context={"request": request})
         return Response(serializer.data)
 
     def post(self, request, format=None):
-        serializer = ItemSerializer(data=request.data)
+        serializer = ItemSerializer(data=request.data, context={"request": request})
         if serializer.is_valid():
             serializer.save(seller=request.user.seller)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class CategoryItemsAPIView(ListAPIView):
+    serializer_class = ItemSerializer
+
+    def get_queryset(self):
+        category_id = self.kwargs["pk"]
+        try:
+            category = Category.objects.get(pk=category_id)
+        except Category.DoesNotExist:
+            return Item.objects.none()
+
+        # Include items in this category
+        items = Item.objects.filter(category=category)
+
+        # (Optional) also include items in subcategories
+        subcategories = category.subcategories.all()
+        if subcategories.exists():
+            items = Item.objects.filter(category__in=subcategories)
+
+        return items
 
 
 class ItemViewSet(viewsets.ModelViewSet):
@@ -67,6 +111,9 @@ class ItemViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend, SearchFilter]
     filterset_fields = ["category", "manufacturer", "item_type", "price", "is_active"]
     search_fields = ["item_name", "description", "manufacturer"]
+
+    def get_serializer_context(self):
+        return {"request": self.request}
 
     def perform_create(self, serializer):
         seller = self.request.user.seller
@@ -121,7 +168,7 @@ class ItemViewSet(viewsets.ModelViewSet):
         return queryset.distinct()
 
 
-class ItemDetailAPIView(APIView):
+class ItemRetrieveUpdateDestroyAPIView(APIView):
 
     permission_classes = [IsSellerOrReadOnly]
 
@@ -133,13 +180,13 @@ class ItemDetailAPIView(APIView):
 
     def get(self, request, pk, format=None):
         item = self.get_object(pk)
-        serializer = ItemSerializer(item)
+        serializer = ItemSerializer(item, context={"request": request})
         return Response(serializer.data)
 
     def put(self, request, pk, format=None):
         item = self.get_object(pk)
         self.check_object_permissions(request, item)
-        serializer = ItemSerializer(item, data=request.data)
+        serializer = ItemSerializer(item, data=request.data, context={"request": request})
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
@@ -148,7 +195,7 @@ class ItemDetailAPIView(APIView):
     def patch(self, request, pk, format=None):
         item = self.get_object(pk)
         self.check_object_permissions(request, item)
-        serializer = ItemSerializer(item, data=request.data, partial=True)
+        serializer = ItemSerializer(item, data=request.data, partial=True, context={"request": request})
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
@@ -161,7 +208,7 @@ class ItemDetailAPIView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class CartItemAPIView(APIView):
+class CartListCreateAPIView(APIView):
     """
     GET: List all cart items for the authenticated user (not seller)
     POST: Add items to cart
@@ -291,6 +338,9 @@ class OrderUserListCreateAPIView(generics.ListCreateAPIView):
     serializer_class = OrderUserSerializer
     permission_classes = [permissions.IsAuthenticated]
 
+    def get_serializer_context(self):
+        return {"request": self.request}
+
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
@@ -300,6 +350,9 @@ class OrderUserRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIVie
     serializer_class = OrderUserSerializer
     permission_classes = [permissions.IsAuthenticated]
 
+    def get_serializer_context(self):
+        return {"request": self.request}
+
 
 # OrderItem CRUD
 
@@ -308,6 +361,9 @@ class OrderItemListCreateAPIView(generics.ListCreateAPIView):
     queryset = OrderItem.objects.all()
     serializer_class = OrderItemSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+    def get_serializer_context(self):
+        return {"request": self.request}
 
     def perform_create(self, serializer):
         original_item = serializer.validated_data.get("original_item")
@@ -323,6 +379,9 @@ class OrderItemRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIVie
     serializer_class = OrderItemSerializer
     permission_classes = [permissions.IsAuthenticated]
 
+    def get_serializer_context(self):
+        return {"request": self.request}
+
 
 # Order CRUD
 class OrderListCreateAPIView(generics.ListCreateAPIView):
@@ -330,10 +389,16 @@ class OrderListCreateAPIView(generics.ListCreateAPIView):
     serializer_class = OrderSerializer
     permission_classes = [permissions.IsAuthenticated]
 
+    def get_serializer_context(self):
+        return {"request": self.request}
+
 
 class OrderRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = OrderSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+    def get_serializer_context(self):
+        return {"request": self.request}
 
     def get_queryset(self):
         user = self.request.user
@@ -441,6 +506,9 @@ class UserOrderListAPIView(generics.ListAPIView):
     serializer_class = OrderSerializer
     permission_classes = [permissions.IsAuthenticated]
 
+    def get_serializer_context(self):
+        return {"request": self.request}
+
     def get_queryset(self):
         user = self.request.user
         queryset = Order.objects.filter(order_user__user=user)
@@ -456,6 +524,9 @@ class UserOrderListAPIView(generics.ListAPIView):
 class SellerOrderListAPIView(generics.ListAPIView):
     serializer_class = OrderSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+    def get_serializer_context(self):
+        return {"request": self.request}
 
     def get_queryset(self):
         user = self.request.user
@@ -474,6 +545,9 @@ class OrderUpdateAPIView(generics.RetrieveUpdateAPIView):
     queryset = Order.objects.all()
     serializer_class = OrderSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+    def get_serializer_context(self):
+        return {"request": self.request}
 
     def get_queryset(self):
         user = self.request.user

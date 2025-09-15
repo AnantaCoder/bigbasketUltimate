@@ -69,10 +69,12 @@ const LoginSignupModal = ({ closeModal }) => {
     password: "",
     firstName: "",
     lastName: "",
+    phone: "",
   });
   const [otp, setOtp] = useState("");
-  const [loginType, setLoginType] = useState("customer"); // 'admin' | 'customer' | 'seller'
+  const [loginType, setLoginType] = useState("customer"); // 'admin' | 'customer' | 'seller' | 'vendor'
   const [signupType, setSignupType] = useState("customer"); // 'customer' | 'seller'
+  const [loginMethod, setLoginMethod] = useState("password"); // 'password' | 'otp'
 
   // Handlers
   const handleInputChange = (e) => {
@@ -93,25 +95,41 @@ const LoginSignupModal = ({ closeModal }) => {
     dispatch(clearError());
   };
 
+  const toggleLoginMethod = () => {
+    setLoginMethod(loginMethod === "password" ? "otp" : "password");
+    setStep("details");
+    setFormData({ email: "", password: "", firstName: "", lastName: "" });
+    setOtp("");
+    dispatch(clearError());
+  };
+
   const handleLogin = async (e) => {
     e.preventDefault();
-    const result = await dispatch(loginUser({ email: formData.email, password: formData.password }));
+    let result;
+    if (loginMethod === "password") {
+      result = await dispatch(loginUser({ email: formData.email, password: formData.password }));
+    } else {
+      result = await dispatch(loginUser({ email: formData.email, otp }));
+    }
     if (loginUser.fulfilled.match(result)) {
       closeModal();
       // Wait for user state update after login
       setTimeout(() => {
         const currentUser = JSON.parse(localStorage.getItem("user"));
         if (currentUser) {
-          if (loginType === "admin") {
+          const role = currentUser.role || "customer";
+          if (role === "admin") {
             navigate("/admin");
-          } else if (loginType === "seller") {
+          } else if (role === "seller") {
             navigate("/seller/manage-items");
-          } else {
-            navigate("/home");
-          }
-        } else {
-          navigate("/home");
-        }
+          } else if (role === "vendor") {
+            navigate("/vendor/dashboard");
+      } else {
+        navigate("/");
+      }
+    } else {
+      navigate("/");
+    }
       }, 100);
     }
   };
@@ -124,6 +142,7 @@ const LoginSignupModal = ({ closeModal }) => {
         password: formData.password,
         first_name: formData.firstName,
         last_name: formData.lastName,
+        phone: formData.phone,
         is_seller: signupType === "seller",
       })
     );
@@ -137,18 +156,25 @@ const LoginSignupModal = ({ closeModal }) => {
     const result = await dispatch(verifyOtp({ email: formData.email, otp }));
     if (verifyOtp.fulfilled.match(result)) {
       closeModal();
-      if (user) {
-        const userType = mode === "signup" ? signupType : loginType;
-        if (userType === "admin") {
-          navigate("/admin");
-        } else if (userType === "seller") {
-          navigate("/seller/manage-items");
-        } else {
-          navigate("/home");
-        }
-      } else {
-        navigate("/home");
-      }
+      setTimeout(() => {
+        const currentUser = JSON.parse(localStorage.getItem("user"));
+        if (currentUser) {
+          const role = currentUser.role || "customer";
+          switch (role) {
+            case "admin":
+              navigate("/admin/dashboard");
+              break;
+            case "seller":
+              navigate("/seller/manage-items");
+              break;
+      // Removed vendor case as per feedback
+      default:
+        navigate("/");
+    }
+  } else {
+    navigate("/");
+  }
+      }, 100);
     }
   };
 
@@ -192,63 +218,85 @@ const LoginSignupModal = ({ closeModal }) => {
 
         {/* Right Form Section */}
         <div className="md:col-span-6 p-8 sm:p-12 bg-black text-white flex flex-col justify-center">
-          {step === "details" ? (
-            mode === "login" ? (
-              <>
-                <h2 className="text-3xl font-bold mb-1">Login/ Sign up</h2>
-                <p className="text-yellow-500 mb-6">Using OTP</p>
+{step === "details" ? (
+  mode === "login" ? (
+    <>
+      <h2 className="text-3xl font-bold mb-1">Login/ Sign up</h2>
+      <p className="text-yellow-500 mb-6">
+        {loginMethod === "password" ? "Using Username & Password" : "Using OTP"}
+      </p>
 
-                {/* Login Type Selection */}
-                <div className="mb-6 flex space-x-4">
-                  {["admin", "customer", "seller"].map((type) => (
-                    <button
-                      key={type}
-                      onClick={() => setLoginType(type)}
-                      className={`flex-1 py-2 rounded-md font-semibold ${
-                        loginType === type ? "bg-yellow-600 text-black" : "bg-gray-800 text-yellow-400"
-                      }`}
-                    >
-                      {type.charAt(0).toUpperCase() + type.slice(1)}
-                    </button>
-                  ))}
-                </div>
+      {/* Removed role selection buttons as per user request */}
+      {/* <div className="mb-6 flex space-x-4">
+        {["admin", "customer", "seller", "vendor"].map((type) => (
+          <button
+            key={type}
+            onClick={() => setLoginType(type)}
+            className={`flex-1 py-2 rounded-md font-semibold ${
+              loginType === type ? "bg-yellow-600 text-black" : "bg-gray-800 text-yellow-400"
+            }`}
+          >
+            {type.charAt(0).toUpperCase() + type.slice(1)}
+          </button>
+        ))}
+      </div> 
+      */}
 
-                <form onSubmit={handleLogin}>
-                  <input
-                    name="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={handleInputChange}
-                    placeholder="Enter Phone number/ Email Id"
-                    required
-                    className="w-full px-4 py-3 mb-4 rounded-md border-2 border-gray-600 bg-white text-black"
-                  />
-                  <input
-                    name="password"
-                    type="password"
-                    value={formData.password}
-                    onChange={handleInputChange}
-                    placeholder="Enter Password"
-                    required
-                    className="w-full px-4 py-3 mb-4 rounded-md border-2 border-gray-600 bg-white text-black"
-                  />
-                  {renderError()}
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full mt-4 bg-yellow-600 hover:bg-yellow-700 text-black font-bold py-3 px-4 rounded-md disabled:bg-gray-500"
-                  >
-                    {loading ? "Logging in..." : "Continue"}
-                  </button>
-                  <p className="text-center mt-4 text-sm text-yellow-400">
-                    Don&apos;t have an account?{" "}
-                    <button type="button" onClick={() => switchMode("signup")} className="font-semibold underline">
-                      Sign up
-                    </button>
-                  </p>
-                </form>
-              </>
-            ) : (
+      <form onSubmit={handleLogin}>
+        <input
+          name="email"
+          type="email"
+          value={formData.email}
+          onChange={handleInputChange}
+          placeholder="Enter Phone number/ Email Id"
+          required
+          className="w-full px-4 py-3 mb-4 rounded-md border-2 border-gray-600 bg-white text-black"
+        />
+        {loginMethod === "password" ? (
+          <input
+            name="password"
+            type="password"
+            value={formData.password}
+            onChange={handleInputChange}
+            placeholder="Enter Password"
+            required
+            className="w-full px-4 py-3 mb-4 rounded-md border-2 border-gray-600 bg-white text-black"
+          />
+        ) : (
+          <input
+            name="otp"
+            type="text"
+            value={otp}
+            onChange={handleOtpChange}
+            placeholder="Enter OTP"
+            maxLength="6"
+            required
+            className="w-full px-4 py-3 mb-4 rounded-md border-2 border-gray-600 bg-white text-black"
+          />
+        )}
+        {renderError()}
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full mt-4 bg-yellow-600 hover:bg-yellow-700 text-black font-bold py-3 px-4 rounded-md disabled:bg-gray-500"
+        >
+          {loading ? "Logging in..." : "Continue"}
+        </button>
+        <p className="text-center mt-4 text-sm text-yellow-400">
+          Don&apos;t have an account?{" "}
+          <button type="button" onClick={() => switchMode("signup")} className="font-semibold underline">
+            Sign up
+          </button>
+        </p>
+        <p className="text-center mt-2 text-sm text-yellow-400">
+          Or{" "}
+          <button type="button" onClick={toggleLoginMethod} className="font-semibold underline">
+            {loginMethod === "password" ? "Use OTP login" : "Use Password login"}
+          </button>
+        </p>
+      </form>
+    </>
+  ) : (
               <>
                 <h2 className="text-3xl font-bold mb-1">Sign up</h2>
                 <p className="text-yellow-500 mb-6">Create your account</p>
@@ -295,6 +343,15 @@ const LoginSignupModal = ({ closeModal }) => {
                     value={formData.email}
                     onChange={handleInputChange}
                     placeholder="Enter Email Id"
+                    required
+                    className="w-full px-4 py-3 mt-4 bg-white text-gray-900 rounded-md border-2 border-gray-600"
+                  />
+                  <input
+                    name="phone"
+                    type="tel"
+                    value={formData.phone}
+                    onChange={handleInputChange}
+                    placeholder="Enter Phone Number"
                     required
                     className="w-full px-4 py-3 mt-4 bg-white text-gray-900 rounded-md border-2 border-gray-600"
                   />

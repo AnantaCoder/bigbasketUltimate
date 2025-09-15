@@ -22,6 +22,13 @@ function CheckoutPage() {
     }
   }, [status, dispatch]);
 
+  // Update phone number when user changes
+  useEffect(() => {
+    if (user?.phone) {
+      setAddressForm((prev) => ({ ...prev, phone_no: user.phone }));
+    }
+  }, [user]);
+
   const totalAmountPayable =
     cart && cart.total_price !== undefined
       ? cart.total_price
@@ -48,7 +55,7 @@ function CheckoutPage() {
 
   // Address form state
   const [addressForm, setAddressForm] = useState({
-    phone_no: "",
+    phone_no: user?.phone || "",
     address: "",
     city: "",
     state: "",

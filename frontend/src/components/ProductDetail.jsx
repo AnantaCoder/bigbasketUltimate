@@ -17,6 +17,10 @@ const ProductDetail = () => {
   const [error, setError] = useState(null);
   const [selectedImage, setSelectedImage] = useState("");
   const [selectedPackSize, setSelectedPackSize] = useState(null);
+  
+  // Zoom functionality states
+  const [isZooming, setIsZooming] = useState(false);
+  const [zoomPosition, setZoomPosition] = useState({ x: 0, y: 0 });
 
   const mapApiItemToProduct = (apiItem) => {
     const images =
@@ -98,6 +102,22 @@ const ProductDetail = () => {
     dispatch(saveItemForLater(product.id));
   };
 
+  // Zoom functionality handlers
+  const handleMouseEnter = () => {
+    setIsZooming(true);
+  };
+
+  const handleMouseLeave = () => {
+    setIsZooming(false);
+  };
+
+  const handleMouseMove = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    setZoomPosition({ x, y });
+  };
+
   console.log("product", product);
 
   if (loading) {
@@ -130,6 +150,10 @@ const ProductDetail = () => {
     ? Math.round((savings / currentPriceInfo.mrp) * 100)
     : 0;
 
+  const currentImage = selectedImage ||
+    product.images?.[0] ||
+    "https://www.bbassets.com/media/uploads/p/m/10000102_20-fresho-cucumber.jpg?tr=w-154,q-80";
+
   return (
     <div className="bg-gray-50 min-h-screen font-sans">
       <div className="container mx-auto px-4 py-8">
@@ -145,16 +169,30 @@ const ProductDetail = () => {
         <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-lg">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
             <div>
-              <div className="border rounded-lg overflow-hidden mb-4">
+              <div 
+                className="border rounded-lg overflow-hidden mb-4 relative cursor-crosshair"
+                onMouseEnter={handleMouseEnter}
+                onMouseLeave={handleMouseLeave}
+                onMouseMove={handleMouseMove}
+              >
                 <img
-                  src={
-                    selectedImage ||
-                    product.images?.[0] ||
-                    "https://www.bbassets.com/media/uploads/p/m/10000102_20-fresho-cucumber.jpg?tr=w-154,q-80"
-                  }
+                  src={currentImage}
                   alt="Main product"
                   className="w-full h-auto object-cover aspect-square"
                 />
+
+                {/* Zoom Overlay */}
+                {isZooming && (
+                  <div
+                    className="fixed top-[100px] left-[calc(50%+200px)] w-96 h-96 border border-gray-300 rounded-lg shadow-lg bg-white overflow-hidden z-50 pointer-events-none"
+                    style={{
+                      backgroundImage: `url(${currentImage})`,
+                      backgroundRepeat: 'no-repeat',
+                      backgroundSize: '250%',
+                      backgroundPosition: `${zoomPosition.x}% ${zoomPosition.y}%`,
+                    }}
+                  />
+                )}
               </div>
               <div className="flex space-x-2">
                 {product.images?.map((img, i) => (

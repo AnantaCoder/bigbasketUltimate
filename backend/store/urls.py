@@ -6,10 +6,13 @@ router = DefaultRouter()
 router.register(r"new-items", ItemViewSet, basename="item")
 
 urlpatterns = [
-    path("categories/", CategoryListAPIView.as_view(), name="category-view"),
+    path("categories/", CategoryListCreateAPIView.as_view(), name="category-list-create"),
+    path("categories/<int:pk>/", CategoryDetailAPIView.as_view(), name="category-detail"),
+    path("categories/<int:pk>/breadcrumb/", CategoryBreadcrumbAPIView.as_view(), name="category-breadcrumb"),
+    path("categories/<int:pk>/items/", CategoryItemsAPIView.as_view(), name="category-items"),
     path("items/", ItemListCreateAPIView.as_view(), name="item-list-create"),
-    path("items/<int:pk>/", ItemDetailAPIView.as_view(), name="item-detail"),
-    path("cart/", CartItemAPIView.as_view(), name="cart-items"),
+    path("items/<int:pk>/", ItemRetrieveUpdateDestroyAPIView.as_view(), name="item-detail"),
+    path("cart/", CartListCreateAPIView.as_view(), name="cart-list-create"),
     # OrderUser endpoints
     path(
         "order-users/",

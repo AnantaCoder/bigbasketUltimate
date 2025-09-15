@@ -1,35 +1,10 @@
 from rest_framework import serializers
 from store.models import *
 from accounts.models import Seller
-from supabase import create_client, Client
 from django.conf import settings
 import uuid
 import os
-
-# ==============================
-# Supabase setup
-# ==============================
-supabase_client: Client = None
-SUPABASE_BUCKET_NAME = None
-
-try:
-    if (
-        settings.SUPABASE_URL
-        and settings.SUPABASE_KEY
-        and settings.SUPABASE_BUCKET_NAME
-    ):
-        supabase_client = create_client(settings.SUPABASE_URL, settings.SUPABASE_KEY)
-        SUPABASE_BUCKET_NAME = settings.SUPABASE_BUCKET_NAME
-    else:
-        print(
-            "Supabase settings (URL, Key, or Bucket Name) are not fully configured in settings.py."
-        )
-except AttributeError as e:
-    print(
-        f"Warning: Supabase settings not fully loaded. Ensure .env and settings.py are correct. Error: {e}"
-    )
-except Exception as e:
-    print(f"Error initializing Supabase client: {e}")
+from store.supabase_client import supabase_client, SUPABASE_BUCKET_NAME
 
 
 # ==============================
@@ -73,6 +48,22 @@ class CategorySerializer(serializers.ModelSerializer):
             "parent",  # parent category
             "subcategories",  # recursive children
         ]
+
+
+# ==============================
+# Category Breadcrumb Serializer
+# ==============================
+class CategoryBreadcrumbSerializer(serializers.ModelSerializer):
+    parent = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Category
+        fields = ["id", "name", "parent"]
+
+    def get_parent(self, obj):
+        if obj.parent:
+            return CategoryBreadcrumbSerializer(obj.parent).data
+        return None
 
 
 # ==============================
@@ -240,6 +231,20 @@ class CartSerializer(serializers.ModelSerializer):
     def get_total_price(self, obj):
         return sum(cart_item.total_price for cart_item in obj.cart_items.all())
 
+    def create(self, validated_data):
+        user = self.context["request"].user
+        cart, _ = Cart.objects.get_or_create(user=user)
+
+        item_ids = validated_data.pop("item_ids", [])
+        quantities = validated_data.pop("quantities", [])
+
+        for idx, item_id in enumerate(item_ids):
+            item = Item.objects.get(id=item_id)
+            qty = quantities[idx] if idx < len(quantities) else 1
+            CartItem.objects.create(cart=cart, item=item, quantity=qty)
+
+        return cart
+
 
 # ==============================
 # OrderUser Serializer
@@ -382,3 +387,13 @@ class OrderSerializer(serializers.ModelSerializer):
             "delivered_at",
             "is_active",
         ]
+
+    def create(self, validated_data):
+        order_user = validated_data.pop("order_user")
+        order_items = validated_data.pop("order_items", [])
+        user = self.context["request"].user
+
+        order = Order.objects.create(order_user=order_user, **validated_data)
+        order.order_items.set(order_items)
+
+        return order

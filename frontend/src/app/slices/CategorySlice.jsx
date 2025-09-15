@@ -1,50 +1,30 @@
-import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import api from "../../services/api";
 
+// Fetch all categories (with subcategories)
 export const fetchCategories = createAsyncThunk(
   "categories/fetchCategories",
-  async ({ page = 1, pageSize = 10 }, { rejectWithValue }) => {
-    try {
-      const params = { page, pageSize };
-      const response = await api.get("/store/categories/", { params });
-
-      const categoriesArray = response.data;
-
-      // We create the payload object that the rest of our app expects.
-      return {
-        categories: categoriesArray,
-        totalItems: categoriesArray.length, // Get count from the array itself
-        page,
-        pageSize,
-      };
-    } catch (error) {
-      const message =
-        error.response?.data?.detail ||
-        error.message ||
-        "Failed to fetch categories.";
-      return rejectWithValue({ message });
-    }
+  async ({ page = 1, pageSize = 50 }) => {
+    const response = await api.get(`/store/categories/?page=${page}&page_size=${pageSize}`);
+    return response.data;
   }
 );
 
-// NEW: Thunk for adding a new item
-export const addItem = createAsyncThunk(
-  "categories/addItem",
-  async (itemFormData, { rejectWithValue }) => {
-    try {
-      // We must send file data using 'multipart/form-data'
-      const response = await api.post("/store/items/", itemFormData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
-      return response.data;
-    } catch (error) {
-      const message =
-        error.response?.data?.detail ||
-        "Failed to add item. Please check the form and try again.";
-      return rejectWithValue({ message });
-    }
+// Fetch single category (with parent chain for breadcrumb)
+export const fetchCategoryById = createAsyncThunk(
+  "categories/fetchCategoryById",
+  async (id) => {
+    const response = await api.get(`/store/categories/${id}/breadcrumb/`);
+    return response.data;
+  }
+);
+
+// Fetch items by category id
+export const fetchItemsByCategory = createAsyncThunk(
+  "categories/fetchItemsByCategory",
+  async (id) => {
+    const response = await api.get(`/store/categories/${id}/items/`);
+    return response.data;
   }
 );
 
@@ -52,55 +32,40 @@ const categorySlice = createSlice({
   name: "categories",
   initialState: {
     categories: [],
-    loading: false, // For fetching categories
+    selectedCategory: null,
+    categoryItems: [],
+    loading: false,
     error: null,
-    page: 1,
-    totalPages: 1,
-    // NEW state for adding an item
-    itemLoading: false,
-    itemError: null,
-    itemAddSuccess: false,
   },
-  reducers: {
-    // NEW reducer to reset the success status after form reset
-    resetItemAddStatus: (state) => {
-      state.itemAddSuccess = false;
-      state.itemError = null;
-    },
-  },
+  reducers: {},
   extraReducers: (builder) => {
     builder
-      // Cases for fetching categories
       .addCase(fetchCategories.pending, (state) => {
         state.loading = true;
-        state.error = null;
       })
-      .addCase(fetchCategories.fulfilled, (state, { payload }) => {
+      .addCase(fetchCategories.fulfilled, (state, action) => {
         state.loading = false;
-        state.page = payload.page;
-        state.categories = payload.categories;
-        state.totalPages = Math.ceil(payload.totalItems / payload.pageSize);
+        state.categories = action.payload;
       })
-      .addCase(fetchCategories.rejected, (state, { payload }) => {
+      .addCase(fetchCategories.rejected, (state, action) => {
         state.loading = false;
-        state.error = payload;
+        state.error = action.error.message;
       })
-      // NEW cases for adding an item
-      .addCase(addItem.pending, (state) => {
-        state.itemLoading = true;
-        state.itemError = null;
-        state.itemAddSuccess = false;
+      .addCase(fetchCategoryById.pending, (state) => {
+        state.loading = true;
       })
-      .addCase(addItem.fulfilled, (state) => {
-        state.itemLoading = false;
-        state.itemAddSuccess = true;
+      .addCase(fetchCategoryById.fulfilled, (state, action) => {
+        state.loading = false;
+        state.selectedCategory = action.payload;
       })
-      .addCase(addItem.rejected, (state, { payload }) => {
-        state.itemLoading = false;
-        state.itemError = payload.message;
+      .addCase(fetchCategoryById.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message;
+      })
+      .addCase(fetchItemsByCategory.fulfilled, (state, action) => {
+        state.categoryItems = action.payload.results;
       });
   },
 });
 
-export const { resetItemAddStatus } = categorySlice.actions;
 export default categorySlice.reducer;

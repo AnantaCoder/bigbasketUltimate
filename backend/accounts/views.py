@@ -40,10 +40,55 @@ class LoginView(APIView):
     def post(self, request):
         email = request.data.get("email", "")
         password = request.data.get("password", "")
+        otp = request.data.get("otp", None)
 
-        if not email or not password:
+        if not email:
             return Response(
-                {"detail": "Email and Password is required", "status": "error"},
+                {"detail": "Email is required", "status": "error"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # If OTP is provided, authenticate by OTP
+        if otp:
+            try:
+                user = User.objects.get(email=email)
+            except User.DoesNotExist:
+                return Response(
+                    {"detail": "Invalid credentials.", "status": "error"},
+                    status=status.HTTP_401_UNAUTHORIZED,
+                )
+            otp_obj = OTP.objects.filter(user=user).order_by("-created_at").first()
+            if not otp_obj or otp_obj.code != str(otp):
+                return Response(
+                    {"detail": "Invalid OTP.", "status": "error"},
+                    status=status.HTTP_401_UNAUTHORIZED,
+                )
+            # Check OTP expiry (10 minutes)
+            ttl = timedelta(minutes=10)
+            if timezone.now() > (otp_obj.created_at + ttl):
+                return Response(
+                    {"detail": "OTP expired.", "status": "error"},
+                    status=status.HTTP_401_UNAUTHORIZED,
+                )
+            # OTP valid, delete it and authenticate user
+            otp_obj.delete()
+            user.last_login = timezone.now()
+            user.save(update_fields=["last_login"])
+            refresh = RefreshToken.for_user(user)
+            user_serializer = UserSerializers(user)
+            response_data = {
+                "refresh": str(refresh),
+                "access": str(refresh.access_token),
+                "user": user_serializer.data,
+                "message": "Login successful via OTP",
+                "status": "success",
+            }
+            return Response(response_data, status=status.HTTP_200_OK)
+
+        # Else authenticate by password
+        if not password:
+            return Response(
+                {"detail": "Password is required if OTP not provided", "status": "error"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -54,14 +99,23 @@ class LoginView(APIView):
             user.save(update_fields=["last_login"])
             refresh = RefreshToken.for_user(user)
             user_serializer = UserSerializers(user)
+            # Add role info in response
+            role = "customer"
+            if user.is_superuser:
+                role = "admin"
+            elif hasattr(user, "seller") and user.seller is not None:
+                role = "seller"
+            # Removed vendor role detection as no vendor relation exists
+            # elif hasattr(user, "vendor") and user.vendor is not None:
+            #     role = "vendor"
             response_data = {
                 "refresh": str(refresh),
                 "access": str(refresh.access_token),
                 "user": user_serializer.data,
+                "role": role,
                 "message": "Login successful",
                 "status": "success",
             }
-            print("superadmin data whileloading",response_data)
             return Response(response_data, status=status.HTTP_200_OK)
         else:
             try:
@@ -159,6 +213,64 @@ class RegisterView(APIView):
             raise
 
 
+class RequestOTPView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request, *args, **kwargs):
+        email = request.data.get("email")
+        if not email:
+            return Response(
+                {"detail": "Email is required"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            return Response(
+                {"detail": "User not found"}, status=status.HTTP_404_NOT_FOUND
+            )
+
+        otp_code = generate_otp(6)
+        otp = OTP.objects.create(user=user, code=otp_code)
+        try:
+            self.send_otp_email(user.email, otp_code)
+            return Response(
+                {"message": "OTP sent to your email"}, status=status.HTTP_200_OK
+            )
+        except Exception as e:
+            logger.error(f"Failed to send OTP email to {user.email}: {e}")
+            return Response(
+                {"detail": "Failed to send OTP. Please try again."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+    def send_otp_email(self, to_email: str, otp_code: str):
+        subject = "Your login OTP"
+        message = (
+            f"Hello,\n\n"
+            f"Use the OTP {otp_code} to login\n\n"
+            f"This code is valid for 10 minutes.\n\n"
+            f"can be used only once\n\n"
+            f"See you soon \n\n"
+            f"Team bigbasket\n\n"
+        )
+        try:
+            send_mail(
+                subject=subject,
+                message=message,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[to_email],
+                fail_silently=False,
+            )
+            logger.info(f"Sent login OTP to {to_email}")
+        except BadHeaderError as e:
+            logger.error(f"BadHeaderError when sending login OTP to {to_email}: {e}")
+            raise
+        except Exception as e:
+            logger.error(f"Error sending login OTP to {to_email}: {e}")
+            raise
+
+
 class VerifyOTPView(APIView):
     permission_classes = [permissions.AllowAny]
 
@@ -220,12 +332,21 @@ class VerifyOTPView(APIView):
 
         user_serializer = UserSerializers(user)
 
+        # Add role info in response
+        role = "customer"
+        if user.is_superuser:
+            role = "admin"
+        elif hasattr(user, "seller") and user.seller is not None:
+            role = "seller"
+        # Vendor role detection removed as no vendor relation exists
+
         return Response(
             {
                 "message": "Email verified successfully. You are now logged in.",
                 "refresh": str(refresh),
                 "access": str(access),
                 "user": user_serializer.data,
+                "role": role,
                 "status": "success",
             },
             status=status.HTTP_200_OK,

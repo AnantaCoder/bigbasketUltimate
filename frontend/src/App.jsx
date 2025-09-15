@@ -22,6 +22,7 @@ import ManageItems from "./pages/ManageItems";
 import AdminRoutes from "./admin/adminRoutes";
 import SellerRoutes from "./seller/sellerRoutes";
 import AdminLogin from "./pages/AdminLogin";
+import CategoryPage from "./pages/CategoryPage";
 
 function App() {
   return (
@@ -34,6 +35,7 @@ function App() {
           <Route path="/seller/add-items" element={<AddItems />} />
           <Route path="/seller/manage-items" element={<ManageItems />} />
           <Route path="/cart" element={<CartPage />} />
+          <Route path="/category/:id" element={<CategoryPage />} />
 
           {/* Orders */}
           <Route path="/my-orders" element={<MyOrders />} />

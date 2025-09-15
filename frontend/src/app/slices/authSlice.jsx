@@ -12,11 +12,11 @@ export const loginUser = createAsyncThunk(
     });
     try {
       const response = await api.post("/auth/login/", { email, password });
-      const { access, refresh, user } = response.data;
+      const { access, refresh, user, role } = response.data;
 
       localStorage.setItem("access_token", access);
       localStorage.setItem("refresh_token", refresh);
-      localStorage.setItem("user", JSON.stringify(user));
+      localStorage.setItem("user", JSON.stringify({ ...user, role }));
 
       toast.update(toastId, {
         render: "Login Successful 🥳",
@@ -25,7 +25,7 @@ export const loginUser = createAsyncThunk(
         autoClose: 5000,
       });
 
-      return { access, refresh, user };
+      return { access, refresh, user: { ...user, role } };
     } catch (err) {
       toast.update(toastId, {
         render: err.response?.data.detail || "Login failed 🥺",
@@ -92,11 +92,11 @@ export const verifyOtp = createAsyncThunk(
     });
     try {
       const response = await api.post("/auth/verify-otp/", { email, otp });
-      const { access, refresh, user } = response.data;
+      const { access, refresh, user, role } = response.data;
 
       localStorage.setItem("access_token", access);
       localStorage.setItem("refresh_token", refresh);
-      localStorage.setItem("user", JSON.stringify(user));
+      localStorage.setItem("user", JSON.stringify({ ...user, role }));
 
       toast.update(toastId, {
         render: "OTP Verified ✅ You are logged in!",
@@ -105,7 +105,7 @@ export const verifyOtp = createAsyncThunk(
         autoClose: 5000,
       });
 
-      return { access, refresh, user };
+      return { access, refresh, user: { ...user, role } };
     } catch (err) {
       toast.update(toastId, {
         render: err.response?.data.detail || "OTP verification failed ❌",
@@ -161,7 +161,13 @@ export const logoutUser = createAsyncThunk("auth/logout", async () => {
 const getInitialState = () => {
   try {
     const user = localStorage.getItem("user");
-    return user ? JSON.parse(user) : null;
+    if (!user) return null;
+    const parsedUser = JSON.parse(user);
+    // Add phone field if missing
+    if (!parsedUser.phone) {
+      parsedUser.phone = "";
+    }
+    return parsedUser;
   } catch (err) {
     console.error("failed to parse user from local storage", err);
     return null;

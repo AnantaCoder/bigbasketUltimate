@@ -1,194 +1,332 @@
-import React, { useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { useDispatch, useSelector } from 'react-redux';
-import {
-  fetchItem,
-  clearItemDetail,
-  selectItemDetail,
-  selectItemsError,
-  selectItemDetailLoading, // <- new selector
-} from '../app/slices/itemsSlice';
-import { addItemToCart } from '../app/slices/CartSlice';
+import React, { useEffect, useState } from "react";
+import { useLocation, useParams, useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import { addItemToCart, saveItemForLater } from "../app/slices/CartSlice";
+import { toast } from "react-toastify";
+import WhyChooseUs from "./WhyIsEveryone";
+import RatingAndReviews from "./RatingAndReviews";
 
-const ProductDetailPage = () => {
-  const { id } = useParams();
+const ProductDetail = () => {
+  const location = useLocation();
+  const params = useParams();
+  const navigate = useNavigate();
   const dispatch = useDispatch();
-  const item = useSelector(selectItemDetail);
-  const loading = useSelector(selectItemDetailLoading);
-  const error = useSelector(selectItemsError);
+
+  const [product, setProduct] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [selectedImage, setSelectedImage] = useState("");
+  const [selectedPackSize, setSelectedPackSize] = useState(null);
+  
+  // Zoom functionality states
+  const [isZooming, setIsZooming] = useState(false);
+  const [zoomPosition, setZoomPosition] = useState({ x: 0, y: 0 });
+
+  const mapApiItemToProduct = (apiItem) => {
+    const images =
+      apiItem.image_urls && apiItem.image_urls.length
+        ? apiItem.image_urls
+        : [apiItem.image || ""];
+    const price = apiItem.price ? Number(apiItem.price) : 0;
+    const mrp = apiItem.mrp
+      ? Number(apiItem.mrp)
+      : Number((price * 1.1).toFixed(2));
+    const packSizes =
+      apiItem.packSizes && apiItem.packSizes.length
+        ? apiItem.packSizes
+        : [
+            { size: "1", price: price, mrp: mrp },
+            {
+              size: "0.5",
+              price: Number((price * 0.6).toFixed(2)),
+              mrp: Number((mrp * 0.6).toFixed(2)),
+            },
+          ];
+    return {
+      id: apiItem.id,
+      name: apiItem.item_name || apiItem.name || "Product",
+      brand:
+        apiItem.manufacturer ||
+        (apiItem.seller && apiItem.seller.toString()) ||
+        "Brand",
+      images,
+      packSizes,
+      description: apiItem.description || "",
+      is_in_stock:
+        typeof apiItem.is_in_stock !== "undefined"
+          ? apiItem.is_in_stock
+          : apiItem.quantity > 0,
+      raw: apiItem,
+    };
+  };
 
   useEffect(() => {
-    if (id) {
-      dispatch(fetchItem(parseInt(id, 10)));
-    }
-    return () => {
-      dispatch(clearItemDetail());
+    const loadProduct = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const { id } = params;
+        let apiItem = location.state?.item;
+
+        if (!apiItem && id) {
+          const response = await fetch(`/store/new-items/${id}/`);
+          if (!response.ok) {
+            throw new Error(`Failed to fetch product (${response.status})`);
+          }
+          apiItem = await response.json();
+        }
+
+        if (apiItem) {
+          const mappedProduct = mapApiItemToProduct(apiItem);
+          setProduct(mappedProduct);
+          setSelectedImage(mappedProduct.images?.[0] || "");
+          setSelectedPackSize(mappedProduct.packSizes?.[0] || null);
+        } else {
+          throw new Error("Product data not found.");
+        }
+      } catch (err) {
+        setError(err.message || "An unknown error occurred");
+      } finally {
+        setLoading(false);
+      }
     };
-  }, [dispatch, id]);
+
+    loadProduct();
+  }, [params.id, location.state?.item]);
 
   const handleAddToCart = () => {
-    if (item) {
-      dispatch(addItemToCart(item.id));
-    }
+    dispatch(addItemToCart(product.id));
   };
+
+  const handleSaveForLater = () => {
+    dispatch(saveItemForLater(product.id));
+  };
+
+  // Zoom functionality handlers
+  const handleMouseEnter = () => {
+    setIsZooming(true);
+  };
+
+  const handleMouseLeave = () => {
+    setIsZooming(false);
+  };
+
+  const handleMouseMove = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    setZoomPosition({ x, y });
+  };
+
+  console.log("product", product);
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-pulse text-center">
-          <div className="h-8 bg-gray-200 rounded w-48 mb-4"></div>
-          <div className="h-64 bg-gray-200 rounded w-96"></div>
+      <div className="w-full min-h-screen flex items-center justify-center">
+        <div className="animate-pulse p-8 bg-white rounded-lg shadow">
+          Loading product…
         </div>
       </div>
     );
   }
 
-  if (error) {
+  if (!product || error) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-red-600 mb-4">Error Loading Product</h2>
-          <p className="text-gray-600 mb-4">{error}</p>
-          <Link to="/home" className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-            Back to Products
-          </Link>
-        </div>
+      <div className="w-full min-h-screen flex flex-col items-center justify-center p-6">
+        <p className="text-gray-500 mb-4">Product could not be found.</p>
+        <button
+          onClick={() => navigate("/home")}
+          className="px-4 py-2 bg-blue-600 text-white rounded"
+        >
+          Back to Home
+        </button>
       </div>
     );
   }
 
-  if (!item) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-600 mb-4">Product Not Found</h2>
-          <Link to="/home" className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
-            Back to Products
-          </Link>
-        </div>
-      </div>
-    );
-  }
+  const currentPriceInfo = selectedPackSize || product.packSizes[0];
+  const savings = currentPriceInfo.mrp - currentPriceInfo.price;
+  const discountPercentage = currentPriceInfo.mrp
+    ? Math.round((savings / currentPriceInfo.mrp) * 100)
+    : 0;
 
-  const imageUrl = item.image_urls?.[0] || 'https://images.pexels.com/photos/32333373/pexels-photo-32333373.jpeg';
+  const currentImage = selectedImage ||
+    product.images?.[0] ||
+    "https://www.bbassets.com/media/uploads/p/m/10000102_20-fresho-cucumber.jpg?tr=w-154,q-80";
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-6xl mx-auto px-4">
-        {/* Breadcrumb */}
-        <nav className="mb-6">
-          <Link to="/home" className="text-blue-600 hover:text-blue-800">Home</Link>
-          <span className="mx-2 text-gray-400">/</span>
-          <span className="text-gray-600">{item.item_name}</span>
-        </nav>
+    <div className="bg-gray-50 min-h-screen font-sans">
+      <div className="container mx-auto px-4 py-8">
+        <div className="mb-6">
+          <button
+            onClick={() => navigate(-1)}
+            className="text-blue-600 hover:underline mb-4"
+          >
+            &larr; Back
+          </button>
+        </div>
 
-        <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-          <div className="md:flex">
-            {/* Product Image */}
-            <div className="md:w-1/2">
-              <img
-                src={imageUrl}
-                alt={item.item_name}
-                className="w-full h-96 object-cover"
-              />
+        <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-lg">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+            <div>
+              <div 
+                className="border rounded-lg overflow-hidden mb-4 relative cursor-crosshair"
+                onMouseEnter={handleMouseEnter}
+                onMouseLeave={handleMouseLeave}
+                onMouseMove={handleMouseMove}
+              >
+                <img
+                  src={currentImage}
+                  alt="Main product"
+                  className="w-full h-auto object-cover aspect-square"
+                />
+                
+                {/* Zoom Overlay */}
+                {isZooming && (
+                  <div 
+                    className="absolute top-0 left-full ml-4 w-96 h-96 border-2 border-gray-300 rounded-lg overflow-hidden bg-white shadow-xl z-50 pointer-events-none"
+                    style={{
+                      backgroundImage: `url(${currentImage})`,
+                      backgroundSize: '200%',
+                      backgroundPosition: `${zoomPosition.x}% ${zoomPosition.y}%`,
+                      backgroundRepeat: 'no-repeat'
+                    }}
+                  >
+                    <div className="absolute inset-0 border border-gray-200"></div>
+                  </div>
+                )}
+              </div>
+              <div className="flex space-x-2">
+                {product.images?.map((img, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setSelectedImage(img)}
+                    className={`w-20 h-20 border rounded-lg overflow-hidden ${
+                      selectedImage === img
+                        ? "ring-2 ring-red-400"
+                        : "border-gray-200"
+                    }`}
+                  >
+                    <img
+                      src={img}
+                      alt={`thumb-${i}`}
+                      className="w-full h-full object-cover"
+                    />
+                  </button>
+                ))}
+              </div>
             </div>
 
-            {/* Product Details */}
-            <div className="md:w-1/2 p-8">
-              {/* Product Description */}
-              <div className="mb-8">
-                <h2 className="text-2xl font-bold mb-6">Description</h2>
-                <p className="text-gray-700">{item.description || 'No description available.'}</p>
-              </div>
-
-              {/* Why choose bigbasket section */}
-              <div className="mb-8">
-                <h2 className="text-2xl font-bold mb-6">Why choose bigbasket?</h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
-                  <div className="flex flex-col items-center bg-gray-100 p-4 rounded-lg">
-                    <svg className="w-8 h-8 mb-2 text-gray-700" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M9 12l2 2 4-4" />
-                      <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2v-7" />
-                      <path d="M7 10V6a5 5 0 0110 0v4" />
-                    </svg>
-                    <span className="font-semibold text-center">Quality products<br />You can trust</span>
-                  </div>
-                  <div className="flex flex-col items-center bg-gray-100 p-4 rounded-lg">
-                    <svg className="w-8 h-8 mb-2 text-gray-700" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
-                    </svg>
-                    <span className="font-semibold text-center">10 min delivery*<br />On selected locations</span>
-                  </div>
-                  <div className="flex flex-col items-center bg-gray-100 p-4 rounded-lg">
-                    <svg className="w-8 h-8 mb-2 text-gray-700" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
-                      <circle cx="12" cy="12" r="10" />
-                      <polyline points="12 6 12 12 16 14" />
-                    </svg>
-                    <span className="font-semibold text-center">On time<br />Guarantee</span>
-                  </div>
-                  <div className="flex flex-col items-center bg-gray-100 p-4 rounded-lg">
-                    <svg className="w-8 h-8 mb-2 text-gray-700" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M3 10h18" />
-                      <path d="M3 6h18" />
-                      <path d="M3 14h18" />
-                      <path d="M3 18h18" />
-                    </svg>
-                    <span className="font-semibold text-center">Free delivery*<br />No extra cost</span>
-                  </div>
-                  <div className="flex flex-col items-center bg-gray-100 p-4 rounded-lg">
-                    <svg className="w-8 h-8 mb-2 text-gray-700" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
-                      <path d="M7 10l5 5 5-5" />
-                    </svg>
-                    <span className="font-semibold text-center">Return Policy<br />No Question asked</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mb-4">
-                <span className={`inline-block px-3 py-1 rounded-full text-sm font-semibold ${
-                  item.is_in_stock ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                }`}>
-                  {item.is_in_stock ? 'In Stock' : 'Out of Stock'}
+            <div>
+              <div className="flex justify-between items-start">
+                <span className="text-sm font-semibold text-gray-500 uppercase">
+                  {product.brand}
                 </span>
               </div>
 
-              <h1 className="text-3xl font-bold text-gray-900 mb-4">{item.item_name}</h1>
+              <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mt-1">
+                {product.name} (
+                {selectedPackSize?.size || product.packSizes?.[0]?.size})
+              </h1>
 
-              <p className="text-gray-600 mb-4">{item.category?.name || 'Uncategorized'}</p>
+              <div className="mt-4">
+                <p className="text-3xl font-extrabold text-gray-800">
+                  ₹{currentPriceInfo.price.toFixed(2)}
+                  <span className="text-lg text-gray-500 font-medium ml-2">
+                    {" "}
+                    (₹
+                    {(
+                      currentPriceInfo.price /
+                      (parseFloat(selectedPackSize?.size) || 1)
+                    ).toFixed(2)}{" "}
+                    / kg)
+                  </span>
+                </p>
+                <p className="text-base text-gray-400 line-through">
+                  MRP: ₹{currentPriceInfo.mrp.toFixed(2)}
+                </p>
+                <p className="text-green-600 font-bold mt-1">
+                  You Save: {discountPercentage}% OFF
+                </p>
+                <p className="text-xs text-gray-400 mt-1">
+                  (inclusive of all taxes)
+                </p>
+              </div>
 
-              <p className="text-gray-500 mb-4">By {item.manufacturer}</p>
-
-              <div className="text-4xl font-bold text-gray-900 mb-6">₹{item.price}</div>
-
-
-
-              <div className="flex gap-4">
+              <div className="my-6 space-y-4">
                 <button
-                  onClick={handleAddToCart}
-                  disabled={!item.is_in_stock}
-                  className={`flex-1 py-3 px-6 rounded-lg font-semibold text-white transition-colors ${
-                    item.is_in_stock
-                      ? 'bg-blue-600 hover:bg-blue-700'
-                      : 'bg-gray-400 cursor-not-allowed'
-                  }`}
+                  onClick={() => handleAddToCart(1)}
+                  className="w-full bg-red-600 text-white font-bold py-3 px-6 rounded-lg shadow-md hover:bg-red-700"
                 >
-                  {item.is_in_stock ? 'Add to Cart' : 'Unavailable'}
+                  Add to basket
                 </button>
-
-                <Link
-                  to="/home"
-                  className="py-3 px-6 border border-gray-300 rounded-lg font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+                <button
+                  onClick={handleSaveForLater}
+                  className="w-full flex items-center justify-center bg-white border border-gray-300 text-gray-700 font-bold py-3 px-6 rounded-lg hover:bg-gray-100"
                 >
-                  Continue Shopping
-                </Link>
+                  Save for later
+                </button>
+              </div>
+
+              <div>
+                <h3 className="font-bold text-gray-800 mb-3">Pack sizes</h3>
+                <div className="space-y-3">
+                  {product.packSizes.map((pack) => (
+                    <button
+                      key={pack.size}
+                      onClick={() => setSelectedPackSize(pack)}
+                      className={`w-full text-left p-4 border rounded-lg flex items-center justify-between ${
+                        selectedPackSize?.size === pack.size
+                          ? "border-green-600 bg-green-50"
+                          : "border-gray-200 bg-white"
+                      }`}
+                    >
+                      <div className="flex items-center">
+                        <div
+                          className={`w-6 h-6 rounded-full flex items-center justify-center mr-4 ${
+                            selectedPackSize?.size === pack.size
+                              ? "bg-green-600 text-white"
+                              : "bg-gray-300"
+                          }`}
+                        >
+                          {selectedPackSize?.size === pack.size ? "✓" : ""}
+                        </div>
+                        <div>
+                          <p className="font-bold text-gray-900">{pack.size}</p>
+                          <p className="text-sm text-gray-600">
+                            ₹{pack.price.toFixed(2)}{" "}
+                            <span className="line-through text-gray-400 ml-2">
+                              ₹{pack.mrp.toFixed(2)}
+                            </span>
+                          </p>
+                        </div>
+                      </div>
+                      <div className="bg-yellow-100 text-yellow-800 text-xs font-bold px-2 py-1 rounded-full">
+                        5 MINS
+                      </div>
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
+          <WhyChooseUs />
+          <div className="border mt-5 px-4 rounded py-2">
+            <div>
+              <h2 className="text-xl font-bold text-gray-900 mt-8 mb-4">
+                About the Product
+              </h2>
+              <div
+                dangerouslySetInnerHTML={{ __html: product.description }}
+                className="text-gray-700 leading-relaxed"
+              ></div>
+            </div>
+          </div>
         </div>
+        <RatingAndReviews />
       </div>
     </div>
   );
 };
 
-export default ProductDetailPage;
+export default ProductDetail;

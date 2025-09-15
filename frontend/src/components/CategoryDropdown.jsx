@@ -1,9 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { fetchCategories } from "../app/slices/CategorySlice";
+import { useNavigate } from "react-router-dom";
 
 const CategoryDropdown = ({ onCategorySelect }) => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { categories, loading, error } = useSelector(
     (state) => state.categories
   );
@@ -41,6 +43,10 @@ const CategoryDropdown = ({ onCategorySelect }) => {
 
   const activeCategory = categories[activeCategoryIndex];
 
+  const handleSelect = (id) => {
+    navigate(`/category/${id}`);
+  };
+
   return (
     <div className="absolute top-full left-0 mt-2 w-full max-w-4xl bg-white shadow-lg rounded-lg flex z-50 border border-gray-200">
       {/* Left column: main categories */}
@@ -52,7 +58,7 @@ const CategoryDropdown = ({ onCategorySelect }) => {
               index === activeCategoryIndex ? "bg-gray-700 font-bold" : ""
             }`}
             onMouseEnter={() => setActiveCategoryIndex(index)}
-            onClick={() => onCategorySelect && onCategorySelect(cat.id)}
+            onClick={() => handleSelect(cat.id)}
           >
             {cat.name}
           </div>
@@ -69,7 +75,7 @@ const CategoryDropdown = ({ onCategorySelect }) => {
             <div key={subcat.id} className="mb-3">
               <h3
                 className="font-semibold mb-2 cursor-pointer hover:text-emerald-600"
-                onClick={() => onCategorySelect && onCategorySelect(subcat.id)}
+                onClick={() => handleSelect(subcat.id)}
               >
                 {subcat.name}
               </h3>
@@ -79,9 +85,7 @@ const CategoryDropdown = ({ onCategorySelect }) => {
                     <li
                       key={subsubcat.id}
                       className="mb-1 cursor-pointer hover:text-emerald-600"
-                      onClick={() =>
-                        onCategorySelect && onCategorySelect(subsubcat.id)
-                      }
+                      onClick={() => handleSelect(subsubcat.id)}
                     >
                       {subsubcat.name}
                     </li>
