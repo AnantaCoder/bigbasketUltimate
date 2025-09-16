@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect, useRef } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import logo from "../assets/logo.png";
 import LoginSignupModal from "../features/LoginSignup";
 import CartDropdown from "./CartDropdown";
@@ -131,8 +131,6 @@ const BasketIcon = () => (
   </svg>
 );
 
-import { useLocation } from "react-router-dom";
-
 function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -145,8 +143,13 @@ function Navbar() {
   const [locationQuery, setLocationQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
 
-  const dispatch = useDispatch();
+  // Search state and ref
   const [searchQuery, setSearchQuery] = useState("");
+  const [showSearchModal, setShowSearchModal] = useState(false);
+  const [searchItems, setSearchItems] = useState([]);
+  const searchTimeoutRef = useRef(null);
+
+  const dispatch = useDispatch();
 
   const { user, isAuthenticated } = useSelector((state) => state.auth);
   const cart = useSelector(selectCart);
@@ -158,14 +161,15 @@ function Navbar() {
     setSearchQuery(searchParam);
   }, [location.search]);
 
-  // Prevent body scroll on mobile menu or cart or category dropdown or user dropdown or location search
+  // Prevent body scroll
   useEffect(() => {
     document.body.style.overflow =
       isMobileMenuOpen ||
       isCartOpen ||
       isCategoryOpen ||
       isUserDropdownOpen ||
-      isLocationSearchOpen
+      isLocationSearchOpen ||
+      showSearchModal
         ? "hidden"
         : "auto";
     return () => {
@@ -177,15 +181,18 @@ function Navbar() {
     isCategoryOpen,
     isUserDropdownOpen,
     isLocationSearchOpen,
+    showSearchModal,
   ]);
 
   const handleSearch = (e) => {
     e.preventDefault();
     if (searchQuery.trim()) {
       navigate(`/home?search=${encodeURIComponent(searchQuery)}`);
-      setIsMobileMenuOpen(false); // Close mobile menu after search
+      setIsMobileMenuOpen(false);
+      setShowSearchModal(false);
     }
   };
+
   const handleLocationSearch = async (e) => {
     const query = e.target.value;
     setLocationQuery(query);
@@ -202,14 +209,48 @@ function Navbar() {
     }
   };
 
-  // 🔹 Select location
+  // Debounced search input change handler
+  const handleSearchInputChange = (e) => {
+    const query = e.target.value;
+    setSearchQuery(query);
+
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    if (query.length > 2) {
+      searchTimeoutRef.current = setTimeout(async () => {
+        try {
+          const res = await axios.get(
+            `/api/store/items/?search=${encodeURIComponent(query)}`
+          );
+          // Assuming the API returns an array of items
+          setSearchItems(res.data);
+          setShowSearchModal(true);
+        } catch (err) {
+          console.error("Error fetching search items:", err);
+          setSearchItems([]);
+          setShowSearchModal(false);
+        }
+      }, 10); // Debounce time
+    } else {
+      setSearchItems([]);
+      setShowSearchModal(false);
+    }
+  };
+
+  // Handle click on search item to navigate to product detail page
+  const handleSearchItemClick = (item) => {
+    setShowSearchModal(false);
+    navigate(`/product/${item.id}`, { state: { item } });
+  };
+
   const handleSelectLocation = () => {
     setIsLocationSearchOpen(false);
     setLocationQuery("");
     setSearchResults([]);
   };
 
-  // Handle category button clicks
   const handleCategoryClick = (categoryName) => {
     navigate(`/home?search=${categoryName}`);
   };
@@ -243,15 +284,16 @@ function Navbar() {
             {/* Search Bar - Desktop */}
             <form
               onSubmit={handleSearch}
-              className="hidden lg:flex flex-grow max-w-3xl mx-8"
+              className="hidden lg:flex flex-grow max-w-3xl mx-8 relative"
             >
               <div className="relative w-full group">
                 <input
                   type="text"
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={handleSearchInputChange}
                   placeholder="Search for Products..."
                   className="w-full border-2 border-gray-200 rounded-xl py-3 pl-5 pr-14 text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all duration-300 shadow-sm group-hover:shadow-md"
+                  autoComplete="off"
                 />
                 <button
                   type="submit"
@@ -259,6 +301,21 @@ function Navbar() {
                 >
                   <SearchIcon />
                 </button>
+                {showSearchModal && searchItems.length > 0 && (
+                  <div className="absolute top-full left-0 right-0 z-50 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                    <ul>
+                      {searchItems.map((item) => (
+                        <li
+                          key={item.id}
+                          className="cursor-pointer px-4 py-2 hover:bg-emerald-100"
+                          onClick={() => handleSearchItemClick(item)}
+                        >
+                          {item.item_name}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
             </form>
 
@@ -269,7 +326,7 @@ function Navbar() {
                 className="hidden lg:flex items-center group cursor-pointer"
                 onClick={() => setIsLocationSearchOpen(true)}
               >
-                <div className="text-sm  text-[#5E9400]  font-bold   bg-gray-200 px-10 py-1 rounded-xl justify-start ">
+                <div className="text-sm text-[#5E9400] font-bold bg-gray-200 px-10 py-1 rounded-xl justify-start ">
                   <div className="flex ">
                     <Zap />
                     Delivery in 5 mins
@@ -339,10 +396,6 @@ function Navbar() {
                       className="rounded-full"
                     />
                   </div>
-                  {/* <div>
-                    <div className="font-semibold">Login</div>
-                    <div className="text-xs text-gray-500">Sign Up</div>
-                  </div> */}
                 </div>
               ) : (
                 <div className="hidden lg:flex items-center relative">
@@ -363,28 +416,22 @@ function Navbar() {
               {/* Basket */}
               <div
                 onClick={toggleCart}
-                className="bg-red-200 pl-2  py-2 pr-2 rounded-xl"
-                aria-label="Toggle cart dropdown "
+                className="bg-red-200 pl-2 py-2 pr-2 rounded-xl relative"
+                aria-label="Toggle cart dropdown"
               >
                 <div
                   onClick={() => navigate("/cart")}
                   className="text-sm hidden xl:block"
                 >
                   <BasketIcon />
-                  {/* <div className="text-gray-500 text-xs">
-                    {cart?.cart_items?.length || 0} Items • ₹
-                    {cart?.total_price || 0}
-                  </div> */}
                 </div>
                 <span className="absolute -top-1 -right-1 bg-gradient-to-r from-red-500 to-red-600 text-white text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center shadow-md">
                   {cart?.cart_items?.length || 0}
                 </span>
               </div>
-
-              {/* {isCartOpen && <CartDropdown onClose={() => setIsCartOpen(false)} />} */}
-
-              {/* Shop by Category */}
-              {/* Removed the Shop by Category button on the right side beside My Basket as per user request */}
+              {isCartOpen && (
+                <CartDropdown onClose={() => setIsCartOpen(false)} />
+              )}
 
               {/* Mobile Hamburger */}
               <div className="lg:hidden">
@@ -409,8 +456,8 @@ function Navbar() {
             aria-haspopup="true"
             aria-expanded={isCategoryOpen}
           >
-            <div className=" justify-start  pl-2 pr-9 flex gap-2 items-start ">
-              <span className="">Shop By Category</span>
+            <div className="justify-start pl-2 pr-9 flex gap-2 items-start">
+              <span>Shop By Category</span>
             </div>
             <ChevronDownIcon
               className={`h-5 w-5 transition-transform duration-300 ${
@@ -485,15 +532,16 @@ function Navbar() {
           </div>
 
           {/* Mobile Search Bar */}
-          <div className="mb-6">
+          <div className="mb-6 relative">
             <form onSubmit={handleSearch} className="w-full">
               <div className="relative">
                 <input
                   type="text"
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={handleSearchInputChange}
                   placeholder="Search for Products..."
                   className="w-full border border-gray-300 rounded-lg py-2 pl-4 pr-10 text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  autoComplete="off"
                 />
                 <button
                   type="submit"
@@ -503,6 +551,21 @@ function Navbar() {
                 </button>
               </div>
             </form>
+            {showSearchModal && searchItems.length > 0 && (
+              <div className="absolute top-full left-0 right-0 z-50 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                <ul>
+                  {searchItems.map((item) => (
+                    <li
+                      key={item.id}
+                      className="cursor-pointer px-4 py-2 hover:bg-emerald-100"
+                      onClick={() => handleSearchItemClick(item)}
+                    >
+                      {item.item_name}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
 
           <nav className="flex flex-col space-y-5 text-[#5E9400] font-semibold">
