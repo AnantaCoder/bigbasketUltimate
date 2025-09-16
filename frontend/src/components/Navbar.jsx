@@ -370,7 +370,7 @@ function Navbar() {
                   onClick={() => navigate("/cart")}
                   className="text-sm hidden xl:block"
                 >
-                <BasketIcon />
+                  <BasketIcon />
                   {/* <div className="text-gray-500 text-xs">
                     {cart?.cart_items?.length || 0} Items • ₹
                     {cart?.total_price || 0}
@@ -419,12 +419,7 @@ function Navbar() {
             />
           </button>
           {isCategoryOpen && (
-            <CategoryDropdown
-              onCategorySelect={(categoryId) => {
-                setIsCategoryOpen(false);
-                navigate(`/home?category=${categoryId}`);
-              }}
-            />
+            <CategoryDropdown onClose={() => setIsCategoryOpen(false)} />
           )}
           <div className="flex items-center space-x-8 text-sm font-semibold">
             <button

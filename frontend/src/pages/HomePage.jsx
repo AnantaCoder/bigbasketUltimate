@@ -97,8 +97,10 @@ function HomePage() {
       <div className="p-4 text-2xl text-gray-400">
         <h1>
           Home /{" "}
-          {categories.find((c) => c.id === selectedCategoryId)?.name ||
-            "Category"}
+          {searchQuery || 
+                        categories.find((c) => c.id === selectedCategoryId)
+                          ?.name || "Category"
+                      } 
         </h1>
       </div>
       <div className="flex">

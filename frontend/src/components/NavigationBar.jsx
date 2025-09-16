@@ -1,4 +1,6 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 
 export const NeuPassLogo = () => (
   <svg
@@ -24,6 +26,9 @@ export const NeuPassLogo = () => (
 );
 
 export const NavigationBar = () => {
+  const navigate = useNavigate();
+  const categories = useSelector((state) => state.categories.categories);
+
   const navItems = [
     { name: 'EGGS, MEAT AND FISH', type: 'default' },
     { name: 'NEUPASS', type: 'neupass' },
@@ -33,11 +38,18 @@ export const NavigationBar = () => {
     { name: 'COMBO STORE', type: 'default' },
   ];
 
-  // Base classes for all buttons
+  const categoryMap = {};
+  categories.forEach((cat) => {
+    navItems.forEach((item) => {
+      if (item.name.toLowerCase().includes(cat.name.toLowerCase())) {
+        categoryMap[item.name] = cat.id;
+      }
+    });
+  });
+
   const baseButtonClasses =
     'flex items-center justify-center px-10 py-3 rounded-lg font-bold text-xs tracking-wider cursor-pointer transition-transform transform hover:scale-105';
 
-  // Specific styles for each button type
   const buttonStyles = {
     default: 'bg-gray-200 text-gray-800 hover:bg-gray-300',
     neupass: 'bg-[#1e1b4b] text-white flex items-center space-x-2',
@@ -48,11 +60,23 @@ export const NavigationBar = () => {
     <div className="bg-white p-4 w-full flex justify-center items-center font-sans">
       <nav className="flex flex-wrap justify-center gap-3 md:gap-4 xl:gap-5">
         {navItems.map((item) => {
+          const categoryId = categoryMap[item.name];
+          const handleClick = () => {
+            if (categoryId) {
+              navigate(`/home?category=${categoryId}`);
+            } else {
+              // fallback to search by name if category not found
+              const searchTerm = item.name.toLowerCase().replace(/[^a-z0-9]+/g, ' ');
+              navigate(`/home?search=${encodeURIComponent(searchTerm)}`);
+            }
+          };
+
           if (item.type === 'neupass') {
             return (
               <button
                 key={item.name}
                 className={`${baseButtonClasses} ${buttonStyles.neupass}`}
+                onClick={handleClick}
               >
                 <NeuPassLogo />
                 <span className="ml-2">NEUPASS</span>
@@ -63,6 +87,7 @@ export const NavigationBar = () => {
             <button
               key={item.name}
               className={`${baseButtonClasses} ${buttonStyles[item.type]}`}
+              onClick={handleClick}
             >
               {item.name}
             </button>
