@@ -345,7 +345,7 @@ const LoginSignupModal = ({ closeModal }) => {
             mode === "login" ? (
               <>
                 <h2 className="text-3xl font-bold mb-1">Login/ Sign up</h2>
-                <p className="text-yellow-500 mb-6">
+                <p className="text-bg-white-500 mb-6">
                   {loginMethod === "password"
                     ? "Using Username & Password"
                     : "Using OTP"}
@@ -408,7 +408,7 @@ const LoginSignupModal = ({ closeModal }) => {
                       ? "Send OTP"
                       : "Continue"}
                   </button>
-                  <p className="text-center mt-4 text-sm text-yellow-400">
+                  <p className="text-center mt-4 text-sm text-bg-white-400">
                     Don&apos;t have an account?{" "}
                     <button
                       type="button"
@@ -418,7 +418,7 @@ const LoginSignupModal = ({ closeModal }) => {
                       Sign up
                     </button>
                   </p>
-                  <p className="text-center mt-2 text-sm text-yellow-400">
+                  <p className="text-center mt-2 text-sm text-bg-white-400">
                     Or{" "}
                     <button
                       type="button"
@@ -445,8 +445,8 @@ const LoginSignupModal = ({ closeModal }) => {
                       onClick={() => setSignupType(type)}
                       className={`flex-1 py-2 rounded-md font-semibold ${
                         signupType === type
-                          ? "bg-yellow-600 text-black"
-                          : "bg-gray-800 text-yellow-400"
+                          ? "bg-white-600 text-black"
+                          : "bg-gray-800 text-bg-white-400"
                       }`}
                     >
                       {type.charAt(0).toUpperCase() + type.slice(1)}
@@ -510,7 +510,7 @@ const LoginSignupModal = ({ closeModal }) => {
                   >
                     {loading ? "Sending OTP..." : "Continue"}
                   </button>
-                  <p className="text-center mt-4 text-sm text-yellow-400">
+                  <p className="text-center mt-4 text-sm text-bg-white-400">
                     Already have an account?{" "}
                     <button
                       type="button"
@@ -541,7 +541,7 @@ const LoginSignupModal = ({ closeModal }) => {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full mt-6 bg-yellow-600 hover:bg-yellow-700 text-black font-bold py-3 px-4 rounded-md disabled:bg-gray-500"
+                  className="w-full mt-6 bg-white-600 hover:bg-white-700 text-black font-bold py-3 px-4 rounded-md disabled:bg-gray-500"
                 >
                   {loading ? "Verifying..." : "Verify & Proceed"}
                 </button>
