@@ -593,7 +593,7 @@ const LoginSignupModal = ({ closeModal }) => {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full mt-6 bg-white-600 hover:bg-white-700 text-black font-bold py-3 px-4 rounded-md disabled:bg-gray-500"
+                  className="w-full mt-6 bg-white-600 hover:bg-white-700 text-WHITE bg-red-600 font-bold py-3 px-4 rounded-md disabled:bg-gray-500"
                 >
                   {loading ? "Verifying..." : "Verify & Proceed"}
                 </button>
