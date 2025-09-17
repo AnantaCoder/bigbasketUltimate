@@ -57,8 +57,17 @@ class LoginView(APIView):
                     {"detail": "Invalid credentials.", "status": "error"},
                     status=status.HTTP_401_UNAUTHORIZED,
                 )
+            if user.is_otp_blocked():
+                return Response(
+                    {
+                        "detail": "Too many failed OTP attempts. Please try again after 30 minutes.",
+                        "status": "error",
+                    },
+                    status=status.HTTP_429_TOO_MANY_REQUESTS,
+                )
             otp_obj = OTP.objects.filter(user=user).order_by("-created_at").first()
             if not otp_obj or otp_obj.code != str(otp):
+                user.increment_otp_failed_attempts()
                 return Response(
                     {"detail": "Invalid OTP.", "status": "error"},
                     status=status.HTTP_401_UNAUTHORIZED,
@@ -66,12 +75,14 @@ class LoginView(APIView):
             # Check OTP expiry (10 minutes)
             ttl = timedelta(minutes=10)
             if timezone.now() > (otp_obj.created_at + ttl):
+                user.increment_otp_failed_attempts()
                 return Response(
                     {"detail": "OTP expired.", "status": "error"},
                     status=status.HTTP_401_UNAUTHORIZED,
                 )
             # OTP valid, delete it and authenticate user
             otp_obj.delete()
+            user.reset_otp_attempts()
             user.last_login = timezone.now()
             user.save(update_fields=["last_login"])
             refresh = RefreshToken.for_user(user)
@@ -234,8 +245,25 @@ class RequestOTPView(APIView):
                 {"detail": "User not found"}, status=status.HTTP_404_NOT_FOUND
             )
 
+        if user.is_otp_blocked():
+            return Response(
+                {
+                    "detail": "Too many failed OTP attempts. Please try again after 30 minutes."
+                },
+                status=status.HTTP_429_TOO_MANY_REQUESTS,
+            )
+
+        if not user.can_send_otp():
+            return Response(
+                {
+                    "detail": "You have reached the maximum number of OTP requests. Please try again after 30 minutes."
+                },
+                status=status.HTTP_429_TOO_MANY_REQUESTS,
+            )
+
         otp_code = generate_otp(6)
         otp = OTP.objects.create(user=user, code=otp_code)
+        user.send_otp_attempt()
         try:
             self.send_otp_email(user.email, otp_code)
             return Response(
@@ -402,3 +430,136 @@ class SellerProfileView(generics.RetrieveUpdateAPIView):
             return self.request.user.seller
         except Seller.DoesNotExist:
             raise serializers.ValidationError("Seller profile not found.")
+
+
+class UserProfileUpdateView(generics.RetrieveUpdateAPIView):
+    serializer_class = UserSerializers
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_object(self):
+        return self.request.user
+
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop("partial", False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+
+        # Check if email or phone is being changed
+        new_email = request.data.get("email")
+        new_phone = request.data.get("phone")
+
+        if new_email and new_email != instance.email:
+            # Email change requires OTP verification
+            otp_code = request.data.get("otp")
+            if not otp_code:
+                return Response(
+                    {"detail": "OTP required to change email."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            # Verify OTP sent to current email
+            otp_obj = OTP.objects.filter(user=instance).order_by("-created_at").first()
+            if not otp_obj or otp_obj.code != str(otp_code):
+                return Response(
+                    {"detail": "Invalid OTP."}, status=status.HTTP_400_BAD_REQUEST
+                )
+            ttl = timedelta(minutes=10)
+            if timezone.now() > (otp_obj.created_at + ttl):
+                return Response(
+                    {"detail": "OTP expired."}, status=status.HTTP_400_BAD_REQUEST
+                )
+            otp_obj.delete()
+
+        if new_phone and new_phone != instance.phone:
+            # Phone change requires OTP verification (assuming phone OTP, but for now use email OTP)
+            otp_code = request.data.get("otp")
+            if not otp_code:
+                return Response(
+                    {"detail": "OTP required to change phone."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            # Verify OTP
+            otp_obj = OTP.objects.filter(user=instance).order_by("-created_at").first()
+            if not otp_obj or otp_obj.code != str(otp_code):
+                return Response(
+                    {"detail": "Invalid OTP."}, status=status.HTTP_400_BAD_REQUEST
+                )
+            ttl = timedelta(minutes=10)
+            if timezone.now() > (otp_obj.created_at + ttl):
+                return Response(
+                    {"detail": "OTP expired."}, status=status.HTTP_400_BAD_REQUEST
+                )
+            otp_obj.delete()
+
+        self.perform_update(serializer)
+
+        if getattr(instance, "_prefetched_objects_cache", None):
+            # If 'prefetch_related' has been applied to a queryset, we need to
+            # forcibly invalidate the prefetch cache on the instance.
+            instance._prefetched_objects_cache = {}
+
+        return Response(serializer.data)
+
+
+class RequestProfileOTPView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        user = request.user
+
+        if user.is_otp_blocked():
+            return Response(
+                {
+                    "detail": "Too many failed OTP attempts. Please try again after 30 minutes."
+                },
+                status=status.HTTP_429_TOO_MANY_REQUESTS,
+            )
+
+        if not user.can_send_otp():
+            return Response(
+                {
+                    "detail": "You have reached the maximum number of OTP requests. Please try again after 30 minutes."
+                },
+                status=status.HTTP_429_TOO_MANY_REQUESTS,
+            )
+
+        otp_code = generate_otp(6)
+        otp = OTP.objects.create(user=user, code=otp_code)
+        user.send_otp_attempt()
+        try:
+            self.send_otp_email(user.email, otp_code)
+            return Response(
+                {"message": "OTP sent to your email"}, status=status.HTTP_200_OK
+            )
+        except Exception as e:
+            logger.error(f"Failed to send OTP email to {user.email}: {e}")
+            return Response(
+                {"detail": "Failed to send OTP. Please try again."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
+    def send_otp_email(self, to_email: str, otp_code: str):
+        subject = "Your Profile Update OTP"
+        message = (
+            f"Hello,\n\n"
+            f"Use the OTP {otp_code} to verify your profile update\n\n"
+            f"This code is valid for 10 minutes.\n\n"
+            f"can be used only once\n\n"
+            f"See you soon \n\n"
+            f"Team bigbasket\n\n"
+        )
+        try:
+            send_mail(
+                subject=subject,
+                message=message,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[to_email],
+                fail_silently=False,
+            )
+            logger.info(f"Sent profile OTP to {to_email}")
+        except BadHeaderError as e:
+            logger.error(f"BadHeaderError when sending profile OTP to {to_email}: {e}")
+            raise
+        except Exception as e:
+            logger.error(f"Error sending profile OTP to {to_email}: {e}")
+            raise

@@ -2,6 +2,20 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { toast } from "react-toastify";
 import api from "../../services/api";
 
+
+export const updateUser = createAsyncThunk(
+  "auth/updateUser",
+  async (userData, { rejectWithValue }) => {
+    try {
+      const response = await api.patch("/accounts/profile/", userData);
+      const updatedUser = response.data;
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+      return updatedUser;
+    } catch (err) {
+      return rejectWithValue(err.response?.data || err.message);
+    }
+  }
+);
 export const loginUser = createAsyncThunk(
   "auth/login",
   async ({ email, password, otp }, { rejectWithValue }) => {

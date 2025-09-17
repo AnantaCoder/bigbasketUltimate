@@ -1,4 +1,0 @@
-- [x] Import updateItemQuantity in Cart.jsx
-- [x] Add handleIncreaseQuantity and handleDecreaseQuantity functions
-- [x] Update onClick for - button to handleDecreaseQuantity
-- [x] Update onClick for + button to handleIncreaseQuantity

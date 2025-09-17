@@ -6,12 +6,16 @@ import CardGrid from "../features/CardGrid";
 import RefinedByDropdowns from "../components/RefinedByDropdowns";
 import { fetchCategories } from "../app/slices/CategorySlice";
 import { NavigationBar } from "../components/NavigationBar";
+import Breadcrumb from "../components/Breadcrumb";
+import { fetchCategoryById } from "../app/slices/CategorySlice";
 
 function HomePage() {
   const dispatch = useDispatch();
-  const { categories, loading: categoriesLoading } = useSelector(
-    (state) => state.categories
-  );
+  const {
+    categories,
+    loading: categoriesLoading,
+    selectedCategory,
+  } = useSelector((state) => state.categories);
 
   const [searchParams, setSearchParams] = useSearchParams();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -36,7 +40,11 @@ function HomePage() {
     const searchParam = searchParams.get("search");
     setSelectedCategoryId(categoryParam ? parseInt(categoryParam, 10) : null);
     setSearchQuery(searchParam || null);
-  }, [searchParams]);
+
+    if (categoryParam) {
+      dispatch(fetchCategoryById(categoryParam));
+    }
+  }, [searchParams, dispatch]);
 
   // Sorting option click
   const handleOptionClick = (option) => {
@@ -73,11 +81,6 @@ function HomePage() {
       : setSearchParams({});
   };
 
-  const handleShowAll = () => {
-    setSelectedCategoryId(null);
-    setSearchParams({});
-  };
-
   const toggleShowMore = () => {
     setShowAllCategories((prev) => !prev);
   };
@@ -96,11 +99,14 @@ function HomePage() {
 
       <div className="p-4 text-2xl text-gray-400">
         <h1>
-          Home /{" "}
-          {searchQuery || 
-                        categories.find((c) => c.id === selectedCategoryId)
-                          ?.name || "Category"
-                      } 
+          {/* Home /{" "}
+          {searchQuery ||
+            categories.find((c) => c.id === selectedCategoryId)?.name ||
+            "Category"} */}
+          <Breadcrumb
+            category={categories.find((c) => c.id === selectedCategoryId )}
+          />
+          {console.log(categories)}
         </h1>
       </div>
       <div className="flex">
@@ -152,7 +158,9 @@ function HomePage() {
                     onClick={toggleShowMore}
                     className="mt-4 text-[#5E9400] text-sm underline flex items-center"
                   >
-                    <span>{showAllCategories ? "Show less -" : "Show more +"}</span>
+                    <span>
+                      {showAllCategories ? "Show less -" : "Show more +"}
+                    </span>
                   </button>
                 )}
               </div>

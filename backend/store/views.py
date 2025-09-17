@@ -29,6 +29,7 @@ from rest_framework.generics import ListAPIView
 from .models import Item, Category
 from .serializers import ItemSerializer
 
+
 class CategoryListCreateAPIView(APIView):
 
     permission_classes = [permissions.AllowAny]
@@ -186,7 +187,9 @@ class ItemRetrieveUpdateDestroyAPIView(APIView):
     def put(self, request, pk, format=None):
         item = self.get_object(pk)
         self.check_object_permissions(request, item)
-        serializer = ItemSerializer(item, data=request.data, context={"request": request})
+        serializer = ItemSerializer(
+            item, data=request.data, context={"request": request}
+        )
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
@@ -195,7 +198,9 @@ class ItemRetrieveUpdateDestroyAPIView(APIView):
     def patch(self, request, pk, format=None):
         item = self.get_object(pk)
         self.check_object_permissions(request, item)
-        serializer = ItemSerializer(item, data=request.data, partial=True, context={"request": request})
+        serializer = ItemSerializer(
+            item, data=request.data, partial=True, context={"request": request}
+        )
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data)
@@ -334,24 +339,43 @@ class CartListCreateAPIView(APIView):
 
 # OrderUser CRUD
 class OrderUserListCreateAPIView(generics.ListCreateAPIView):
-    queryset = OrderUser.objects.all()
     serializer_class = OrderUserSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return OrderUser.objects.filter(user=self.request.user)
 
     def get_serializer_context(self):
         return {"request": self.request}
 
     def perform_create(self, serializer):
+        is_default = serializer.validated_data.get("is_default", False)
+        if is_default:
+            # Set all other addresses to not default
+            OrderUser.objects.filter(user=self.request.user, is_default=True).update(
+                is_default=False
+            )
         serializer.save(user=self.request.user)
 
 
 class OrderUserRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = OrderUser.objects.all()
     serializer_class = OrderUserSerializer
     permission_classes = [permissions.IsAuthenticated]
 
+    def get_queryset(self):
+        return OrderUser.objects.filter(user=self.request.user)
+
     def get_serializer_context(self):
         return {"request": self.request}
+
+    def perform_update(self, serializer):
+        is_default = serializer.validated_data.get("is_default", False)
+        if is_default:
+            # Set all other addresses to not default
+            OrderUser.objects.filter(user=self.request.user, is_default=True).exclude(
+                id=self.get_object().id
+            ).update(is_default=False)
+        serializer.save()
 
 
 # OrderItem CRUD
@@ -430,17 +454,23 @@ class CheckoutAPIView(APIView):
 
         order_user_id = request.data.get("order_user_id")
         if not order_user_id:
-            return Response(
-                {"detail": "order_user_id is required."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        try:
-            order_user = OrderUser.objects.get(id=order_user_id, user=user)
-        except OrderUser.DoesNotExist:
-            return Response(
-                {"detail": "Invalid order_user_id."}, status=status.HTTP_400_BAD_REQUEST
-            )
+            # Try to get default address
+            order_user = OrderUser.objects.filter(user=user, is_default=True).first()
+            if not order_user:
+                return Response(
+                    {
+                        "detail": "No default address found. Please provide order_user_id or set a default address."
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+        else:
+            try:
+                order_user = OrderUser.objects.get(id=order_user_id, user=user)
+            except OrderUser.DoesNotExist:
+                return Response(
+                    {"detail": "Invalid order_user_id."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
         # Create OrderItems from CartItems
         order_items = []

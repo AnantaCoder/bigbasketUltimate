@@ -1,16 +1,17 @@
-import React, { useState, useEffect, useRef } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import logo from "../assets/logo.png";
 import LoginSignupModal from "../features/LoginSignup";
 import CategoryDropdown from "./CategoryDropdown";
 import UserDropdown from "./UserDropdown";
+import SearchBar from "./SearchBar";
 import { useSelector, useDispatch } from "react-redux";
 import { logoutUser } from "../app/slices/authSlice";
 
 import { selectCart } from "../app/slices/CartSlice";
 import axios from "axios";
 
-import { CloudLightning, ThumbsDown, Zap } from "lucide-react";
+import { ThumbsDown, Zap } from "lucide-react";
 
 // --- ICONS ---
 const MenuIcon = () => (
@@ -59,23 +60,6 @@ const ChevronDownIcon = ({ className }) => (
     className={className}
   >
     <polyline points="6 9 12 15 18 9" />
-  </svg>
-);
-
-const SearchIcon = () => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    width="20"
-    height="20"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    className="text-white"
-  >
-    <circle cx="11" cy="11" r="8" />
-    <line x1="21" y1="21" x2="16.65" y2="16.65" />
   </svg>
 );
 
@@ -132,7 +116,6 @@ const BasketIcon = () => (
 
 function Navbar() {
   const navigate = useNavigate();
-  const location = useLocation();
   const [showModal, setShowModal] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isCartOpen, setIsCartOpen] = useState(false);
@@ -142,23 +125,10 @@ function Navbar() {
   const [locationQuery, setLocationQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
 
-  // Search state and ref
-  const [searchQuery, setSearchQuery] = useState("");
-  const [showSearchModal, setShowSearchModal] = useState(false);
-  const [searchItems, setSearchItems] = useState([]);
-  const searchTimeoutRef = useRef(null);
-
   const dispatch = useDispatch();
 
   const { user, isAuthenticated } = useSelector((state) => state.auth);
   const cart = useSelector(selectCart);
-
-  // Sync searchQuery state with URL search param
-  useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const searchParam = params.get("search") || "";
-    setSearchQuery(searchParam);
-  }, [location.search]);
 
   // Prevent body scroll
   useEffect(() => {
@@ -167,8 +137,7 @@ function Navbar() {
       isCartOpen ||
       isCategoryOpen ||
       isUserDropdownOpen ||
-      isLocationSearchOpen ||
-      showSearchModal
+      isLocationSearchOpen
         ? "hidden"
         : "auto";
     return () => {
@@ -180,17 +149,7 @@ function Navbar() {
     isCategoryOpen,
     isUserDropdownOpen,
     isLocationSearchOpen,
-    showSearchModal,
   ]);
-
-  const handleSearch = (e) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate(`/home?search=${encodeURIComponent(searchQuery)}`);
-      setIsMobileMenuOpen(false);
-      setShowSearchModal(false);
-    }
-  };
 
   const handleLocationSearch = async (e) => {
     const query = e.target.value;
@@ -206,42 +165,6 @@ function Navbar() {
     } else {
       setSearchResults([]);
     }
-  };
-
-  // Debounced search input change handler
-  const handleSearchInputChange = (e) => {
-    const query = e.target.value;
-    setSearchQuery(query);
-
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-    }
-
-    if (query.length > 2) {
-      searchTimeoutRef.current = setTimeout(async () => {
-        try {
-          const res = await axios.get(
-            `/api/store/items/?search=${encodeURIComponent(query)}`
-          );
-          // Assuming the API returns an array of items
-          setSearchItems(res.data);
-          setShowSearchModal(true);
-        } catch (err) {
-          console.error("Error fetching search items:", err);
-          setSearchItems([]);
-          setShowSearchModal(false);
-        }
-      }, 10); // Debounce time
-    } else {
-      setSearchItems([]);
-      setShowSearchModal(false);
-    }
-  };
-
-  // Handle click on search item to navigate to product detail page
-  const handleSearchItemClick = (item) => {
-    setShowSearchModal(false);
-    navigate(`/product/${item.id}`, { state: { item } });
   };
 
   const handleSelectLocation = () => {
@@ -280,43 +203,10 @@ function Navbar() {
               <img src="/newlogo.png" className="h-20 w-auto scale-220" />
             </div>
 
-            {/* Search Bar - Desktop */}
-            <form
-              onSubmit={handleSearch}
-              className="hidden lg:flex flex-grow max-w-3xl mx-8 relative"
-            >
-              <div className="relative w-full group">
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={handleSearchInputChange}
-                  placeholder="Search for Products..."
-                  className="w-full border-2 border-gray-200 rounded-xl py-3 pl-5 pr-14 text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-4 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all duration-300 shadow-sm group-hover:shadow-md"
-                  autoComplete="off"
-                />
-                <button
-                  type="submit"
-                  className="absolute inset-y-0 right-0 flex items-center justify-center px-4 bg-gradient-to-r from-[#5E9400] to-[#5E9400] hover:from-[#5E9400] hover:to-[#5E9400] rounded-r-xl transition-all duration-300 shadow-md hover:shadow-lg"
-                >
-                  <SearchIcon />
-                </button>
-                {showSearchModal && searchItems.length > 0 && (
-                  <div className="absolute top-full left-0 right-0 z-50 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
-                    <ul>
-                      {searchItems.map((item) => (
-                        <li
-                          key={item.id}
-                          className="cursor-pointer px-4 py-2 hover:bg-emerald-100"
-                          onClick={() => handleSearchItemClick(item)}
-                        >
-                          {item.item_name}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            </form>
+            {/* Search Bar */}
+            <div className="hidden lg:flex flex-1 justify-center">
+              <SearchBar />
+            </div>
 
             {/* Right Side */}
             <div className="flex items-center space-x-4 md:space-x-8 relative">
@@ -428,7 +318,7 @@ function Navbar() {
                   {cart?.cart_items?.length || 0}
                 </span>
               </div>
-              
+
               {/* Mobile Hamburger */}
               <div className="lg:hidden">
                 <button
@@ -525,43 +415,6 @@ function Navbar() {
             <button onClick={() => setIsMobileMenuOpen(false)} className="p-1">
               <CloseIcon />
             </button>
-          </div>
-
-          {/* Mobile Search Bar */}
-          <div className="mb-6 relative">
-            <form onSubmit={handleSearch} className="w-full">
-              <div className="relative">
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={handleSearchInputChange}
-                  placeholder="Search for Products..."
-                  className="w-full border border-gray-300 rounded-lg py-2 pl-4 pr-10 text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  autoComplete="off"
-                />
-                <button
-                  type="submit"
-                  className="absolute inset-y-0 right-0 flex items-center justify-center px-3 bg-emerald-600 hover:bg-emerald-700 rounded-r-lg transition-colors"
-                >
-                  <SearchIcon />
-                </button>
-              </div>
-            </form>
-            {showSearchModal && searchItems.length > 0 && (
-              <div className="absolute top-full left-0 right-0 z-50 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
-                <ul>
-                  {searchItems.map((item) => (
-                    <li
-                      key={item.id}
-                      className="cursor-pointer px-4 py-2 hover:bg-emerald-100"
-                      onClick={() => handleSearchItemClick(item)}
-                    >
-                      {item.item_name}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
           </div>
 
           <nav className="flex flex-col space-y-5 text-[#5E9400] font-semibold">

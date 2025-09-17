@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
+import Breadcrumb from "../components/Breadcrumb";
 import OrderTrackingModal from "../components/OrderTrackingModal";
 import api from "../services/api";
 
@@ -44,6 +45,7 @@ export default function MyOrders() {
     <div className="flex">
       <Sidebar />
       <div className="flex-1 p-6">
+        <Breadcrumb />
         <h1 className="text-2xl font-bold mb-4">My Orders</h1>
         <div className="mb-6 space-y-4">
           <Link

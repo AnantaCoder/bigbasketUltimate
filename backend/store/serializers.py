@@ -262,6 +262,7 @@ class OrderUserSerializer(serializers.ModelSerializer):
             "city",
             "state",
             "pincode",
+            "is_default",
             "created_at",
             "updated_at",
         ]

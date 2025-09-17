@@ -9,6 +9,8 @@ from accounts.views import (
     UserAdminViewSet,
     SellerAdminViewSet,
     SellerProfileView,
+    UserProfileUpdateView,
+    RequestProfileOTPView,
 )
 from accounts.views_dashboard import DashboardStatsView
 
@@ -24,6 +26,12 @@ urlpatterns = [
     path("logout/", LogoutView.as_view(), name="logout"),
     path("dashboard-stats/", DashboardStatsView.as_view(), name="dashboard-stats"),
     path("seller-profile/", SellerProfileView.as_view(), name="seller-profile"),
+    path("profile/", UserProfileUpdateView.as_view(), name="user-profile"),
+    path(
+        "request-profile-otp/",
+        RequestProfileOTPView.as_view(),
+        name="request-profile-otp",
+    ),
 ]
 
 urlpatterns += router.urls
