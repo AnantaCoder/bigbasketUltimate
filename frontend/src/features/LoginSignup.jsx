@@ -146,6 +146,9 @@ const LoginSignupModal = ({ closeModal }) => {
     firstName: "",
     lastName: "",
     phone: "",
+    shopName: "",
+    gstNumber: "",
+    address: "",
   });
   const [otp, setOtp] = useState("");
   const [signupType, setSignupType] = useState("customer"); // 'customer' | 'seller'
@@ -174,6 +177,13 @@ const LoginSignupModal = ({ closeModal }) => {
       errors.password = "Password is required";
     } else if (formData.password.length < 8) {
       errors.password = "Password must be at least 8 characters long";
+    }
+
+    if (signupType === "seller") {
+      if (!formData.shopName.trim()) errors.shopName = "Shop name is required";
+      if (!formData.gstNumber.trim())
+        errors.gstNumber = "GST number is required";
+      if (!formData.address.trim()) errors.address = "Address is required";
     }
 
     return errors;
@@ -265,6 +275,9 @@ const LoginSignupModal = ({ closeModal }) => {
         last_name: formData.lastName,
         phone: formData.phone,
         is_seller: signupType === "seller",
+        shopName: formData.shopName,
+        gstNumber: formData.gstNumber,
+        address: formData.address,
       })
     );
     if (registerUser.fulfilled.match(result)) {
@@ -497,7 +510,7 @@ const LoginSignupModal = ({ closeModal }) => {
                       onClick={() => setSignupType(type)}
                       className={`flex-1 py-2 rounded-md font-semibold ${
                         signupType === type
-                          ? "bg-white-600 text-white"
+                          ? "bg-red-600 text-white"
                           : "bg-gray-800 text-bg-white-400"
                       }`}
                     >
@@ -554,6 +567,37 @@ const LoginSignupModal = ({ closeModal }) => {
                     required
                     className="w-full px-4 py-3 mt-4 bg-white text-gray-900 rounded-md border-2 border-gray-600"
                   />
+                  {signupType === "seller" && (
+                    <>
+                      <input
+                        name="shopName"
+                        type="text"
+                        value={formData.shopName}
+                        onChange={handleInputChange}
+                        placeholder="Shop Name"
+                        required
+                        className="w-full px-4 py-3 mt-4 bg-white text-gray-900 rounded-md border-2 border-gray-600"
+                      />
+                      <input
+                        name="gstNumber"
+                        type="text"
+                        value={formData.gstNumber}
+                        onChange={handleInputChange}
+                        placeholder="GST Number"
+                        required
+                        className="w-full px-4 py-3 mt-4 bg-white text-gray-900 rounded-md border-2 border-gray-600"
+                      />
+                      <input
+                        name="address"
+                        type="text"
+                        value={formData.address}
+                        onChange={handleInputChange}
+                        placeholder="Address"
+                        required
+                        className="w-full px-4 py-3 mt-4 bg-white text-gray-900 rounded-md border-2 border-gray-600"
+                      />
+                    </>
+                  )}
                   {renderError()}
                   <button
                     type="submit"

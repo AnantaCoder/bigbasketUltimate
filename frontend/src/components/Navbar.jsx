@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import logo from "../assets/logo.png";
 import LoginSignupModal from "../features/LoginSignup";
-import CartDropdown from "./CartDropdown";
 import CategoryDropdown from "./CategoryDropdown";
 import UserDropdown from "./UserDropdown";
 import { useSelector, useDispatch } from "react-redux";
@@ -429,10 +428,7 @@ function Navbar() {
                   {cart?.cart_items?.length || 0}
                 </span>
               </div>
-              {isCartOpen && (
-                <CartDropdown onClose={() => setIsCartOpen(false)} />
-              )}
-
+              
               {/* Mobile Hamburger */}
               <div className="lg:hidden">
                 <button

@@ -88,7 +88,10 @@ class LoginView(APIView):
         # Else authenticate by password
         if not password:
             return Response(
-                {"detail": "Password is required if OTP not provided", "status": "error"},
+                {
+                    "detail": "Password is required if OTP not provided",
+                    "status": "error",
+                },
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -165,6 +168,7 @@ class RegisterView(APIView):
         serializer.is_valid(raise_exception=True)
         with transaction.atomic():
             user = serializer.save()
+            # If user is seller, create Seller instance handled in serializer create method
             otp_code = generate_otp(6)
             otp = OTP.objects.create(user=user, code=otp_code)
             try:
@@ -354,12 +358,12 @@ class VerifyOTPView(APIView):
 
 
 class UserAdminViewSet(
-    mixins.ListModelMixin,       
-    mixins.RetrieveModelMixin,  
-    mixins.CreateModelMixin,    
-    mixins.UpdateModelMixin,     
-    mixins.DestroyModelMixin,    
-    viewsets.GenericViewSet
+    mixins.ListModelMixin,
+    mixins.RetrieveModelMixin,
+    mixins.CreateModelMixin,
+    mixins.UpdateModelMixin,
+    mixins.DestroyModelMixin,
+    viewsets.GenericViewSet,
 ):
     queryset = User.objects.all()
     serializer_class = UserSerializers

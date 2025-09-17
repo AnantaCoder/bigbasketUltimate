@@ -42,7 +42,17 @@ export const loginUser = createAsyncThunk(
 export const registerUser = createAsyncThunk(
   "auth/register",
   async (
-    { email, password, first_name, last_name, is_seller },
+    {
+      email,
+      password,
+      first_name,
+      last_name,
+      phone,
+      is_seller,
+      shopName,
+      gstNumber,
+      address,
+    },
     { rejectWithValue }
   ) => {
     const toastId = toast.loading("Creating your account...", {
@@ -52,14 +62,23 @@ export const registerUser = createAsyncThunk(
       draggable: false,
     });
     try {
-      const response = await api.post("/auth/register/", {
+      const payload = {
         email,
         first_name,
         last_name,
+        phone,
         password,
         password2: password,
         is_seller: is_seller || false,
-      });
+      };
+
+      if (is_seller) {
+        payload.shop_name = shopName;
+        payload.gst_number = gstNumber;
+        payload.address = address;
+      }
+
+      const response = await api.post("/auth/register/", payload);
 
       toast.update(toastId, {
         render: "OTP sent! Please check your email 📧",

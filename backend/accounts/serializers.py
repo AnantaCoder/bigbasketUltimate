@@ -36,24 +36,43 @@ class RegisterSerializer(serializers.ModelSerializer):
     password2 = serializers.CharField(
         write_only=True, required=True, style={"input_type": "password"}
     )
+    is_seller = serializers.BooleanField(default=False, write_only=True)
+    # Seller-specific fields (optional, only required if is_seller=True)
+    shop_name = serializers.CharField(max_length=200, required=False, write_only=True)
+    gst_number = serializers.CharField(max_length=15, required=False, write_only=True)
+    address = serializers.CharField(required=False, write_only=True)
 
     class Meta:
         model = User
-        fields = ("email", "password", "password2", "first_name", "last_name", "phone")
+        fields = ("email", "password", "password2", "first_name", "last_name", "phone", "is_seller", "shop_name", "gst_number", "address")
         extra_kwargs = {
             "first_name": {"required": True},
             "last_name": {"required": True},
         }
 
     def validate(self, attrs):
-
         if attrs["password"] != attrs["password2"]:
             raise serializers.ValidationError(
                 {"password": "Password fields didn't match."}
             )
+
+        # If is_seller is True, validate seller-specific fields
+        if attrs.get("is_seller"):
+            if not attrs.get("shop_name"):
+                raise serializers.ValidationError({"shop_name": "Shop name is required for sellers."})
+            if not attrs.get("gst_number"):
+                raise serializers.ValidationError({"gst_number": "GST number is required for sellers."})
+            if not attrs.get("address"):
+                raise serializers.ValidationError({"address": "Address is required for sellers."})
+
         return attrs
 
     def create(self, validated_data):
+        # Extract seller-specific data
+        is_seller = validated_data.pop("is_seller", False)
+        shop_name = validated_data.pop("shop_name", None)
+        gst_number = validated_data.pop("gst_number", None)
+        address = validated_data.pop("address", None)
 
         # Remove password2 from validated data
         validated_data.pop("password2", None)
@@ -65,6 +84,15 @@ class RegisterSerializer(serializers.ModelSerializer):
             password=validated_data["password"],
             phone=validated_data.get("phone"),
         )
+
+        # If registering as seller, create Seller instance
+        if is_seller:
+            Seller.objects.create(
+                user=user,
+                shop_name=shop_name,
+                gst_number=gst_number,
+                address=address,
+            )
 
         return user
 
