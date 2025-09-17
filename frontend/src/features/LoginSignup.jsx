@@ -135,7 +135,7 @@ const LoginSignupModal = ({ closeModal }) => {
   const navigate = useNavigate();
 
   // Redux state
-  const { loading, error, user } = useSelector((state) => state.auth);
+  const { loading, error } = useSelector((state) => state.auth);
 
   // Local state
   const [mode, setMode] = useState("login"); // 'login' | 'signup'
@@ -148,13 +148,41 @@ const LoginSignupModal = ({ closeModal }) => {
     phone: "",
   });
   const [otp, setOtp] = useState("");
-  const [loginType, setLoginType] = useState("customer"); // 'admin' | 'customer' | 'seller' | 'vendor'
   const [signupType, setSignupType] = useState("customer"); // 'customer' | 'seller'
   const [loginMethod, setLoginMethod] = useState("password"); // 'password' | 'otp'
+  const [validationErrors, setValidationErrors] = useState({});
+
+  // Validation function
+  const validateForm = () => {
+    const errors = {};
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const phoneRegex = /^\d{10}$/;
+
+    if (!formData.firstName.trim()) errors.firstName = "First name is required";
+    if (!formData.lastName.trim()) errors.lastName = "Last name is required";
+    if (!formData.email.trim()) {
+      errors.email = "Email is required";
+    } else if (!emailRegex.test(formData.email)) {
+      errors.email = "Please enter a valid email address";
+    }
+    if (!formData.phone.trim()) {
+      errors.phone = "Phone number is required";
+    } else if (!phoneRegex.test(formData.phone)) {
+      errors.phone = "Please enter a valid 10-digit phone number";
+    }
+    if (!formData.password.trim()) {
+      errors.password = "Password is required";
+    } else if (formData.password.length < 8) {
+      errors.password = "Password must be at least 8 characters long";
+    }
+
+    return errors;
+  };
 
   // Handlers
   const handleInputChange = (e) => {
     dispatch(clearError());
+    setValidationErrors({});
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
@@ -224,6 +252,11 @@ const LoginSignupModal = ({ closeModal }) => {
 
   const handleRegister = async (e) => {
     e.preventDefault();
+    const errors = validateForm();
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
+      return;
+    }
     const result = await dispatch(
       registerUser({
         email: formData.email,
@@ -271,10 +304,31 @@ const LoginSignupModal = ({ closeModal }) => {
   };
 
   // Render Error
-  const renderError = () =>
-    error ? (
-      <p className="text-red-400 text-sm mt-2">{error.detail || error}</p>
-    ) : null;
+  const renderError = () => {
+    if (!error && Object.keys(validationErrors).length === 0) return null;
+
+    let errorMessage = "";
+
+    if (Object.keys(validationErrors).length > 0) {
+      errorMessage = Object.values(validationErrors)[0];
+    } else if (typeof error === "string") {
+      errorMessage = error;
+    } else if (error.detail) {
+      errorMessage = error.detail;
+    } else if (typeof error === "object" && error !== null) {
+      // Handle field-specific errors like {email: ["error"]}
+      const keys = Object.keys(error);
+      if (keys.length > 0) {
+        const firstKey = keys[0];
+        const value = error[firstKey];
+        errorMessage = `${firstKey}: ${
+          Array.isArray(value) ? value[0] : value
+        }`;
+      }
+    }
+
+    return <p className="text-red-400 text-sm mt-2">{errorMessage}</p>;
+  };
 
   return (
     <div className="fixed inset-0 bg-transparent backdrop-blur-sm flex items-center justify-center p-4 z-50 transition-opacity duration-300 ease-in-out">
@@ -350,8 +404,6 @@ const LoginSignupModal = ({ closeModal }) => {
                     ? "Using Username & Password"
                     : "Using OTP"}
                 </p>
-
-               
 
                 <form onSubmit={handleLogin}>
                   <input
@@ -445,7 +497,7 @@ const LoginSignupModal = ({ closeModal }) => {
                       onClick={() => setSignupType(type)}
                       className={`flex-1 py-2 rounded-md font-semibold ${
                         signupType === type
-                          ? "bg-white-600 text-black"
+                          ? "bg-white-600 text-white"
                           : "bg-gray-800 text-bg-white-400"
                       }`}
                     >
