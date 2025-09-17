@@ -7,11 +7,13 @@ import {
   saveItemForLater,
   moveToCartFromSaved,
   removeFromSaved,
+  updateItemQuantity,
   selectCart,
   selectCartStatus,
 } from "../app/slices/CartSlice";
 import { useNavigate } from "react-router-dom";
 import { HiOutlineArrowLongLeft } from "react-icons/hi2";
+import { toast } from "react-toastify";
 
 const CartPage = () => {
   const dispatch = useDispatch();
@@ -63,13 +65,14 @@ const CartPage = () => {
     (!savedForLater || savedForLater.length === 0)
   ) {
     return (
-      <div className="flex h-screen flex-col items-center justify-center bg-white text-center p-4">
-        <h1 className="text-3xl font-bold text-gray-800 mb-2">
-          Your Cart is Empty
-        </h1>
-        <p className="text-gray-500 mb-8">
-          Looks like you haven't added anything to your cart yet.
-        </p>
+      <div className="flex  flex-col items-center justify-center bg-white text-center p-4">
+        <img
+          src="/emptyBasket/.png"
+          alt="Empty Basket"
+          className=" mb-6 cursor-pointer"
+          onClick={() => navigate("/home")}
+        />
+        
       </div>
     );
   }
@@ -151,7 +154,16 @@ const CartPage = () => {
               <div className="flex flex-col items-center sm:items-start w-full sm:w-auto">
                 <div className="flex items-center border border-gray-300 rounded-md bg-white">
                   <button
-                    onClick={() => {}}
+                    onClick={() => {
+                      if (item.quantity > 1) {
+                        dispatch(
+                          updateItemQuantity({
+                            itemId: item.id,
+                            quantity: item.quantity - 1,
+                          })
+                        );
+                      }
+                    }}
                     className="px-3 py-1 text-gray-700"
                   >
                     -
@@ -160,7 +172,18 @@ const CartPage = () => {
                     {item.quantity || 1}
                   </div>
                   <button
-                    onClick={() => {}}
+                    onClick={() => {
+                      if ((item.quantity || 1) < 12) {
+                        dispatch(
+                          updateItemQuantity({
+                            itemId: item.id,
+                            quantity: (item.quantity || 1) + 1,
+                          })
+                        );
+                      } else {
+                        toast.error("Maximum quantity limit reached (12)");
+                      }
+                    }}
                     className="px-3 py-1 text-gray-700"
                   >
                     +

@@ -1,7 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { useDispatch } from "react-redux"; // ✅ real redux dispatch
-import { addItemToCart } from "../app/slices/CartSlice"; // ✅ import thunk
+import { useDispatch } from "react-redux";
+import { addItemToCart } from "../app/slices/CartSlice";
 
 // Clock Icon
 const ClockIcon = () => (
@@ -38,7 +38,7 @@ const BookmarkIcon = () => (
 );
 
 const Card = ({ item }) => {
-  const dispatch = useDispatch(); // ✅ redux dispatcher
+  const dispatch = useDispatch();
 
   if (!item) return null;
 
@@ -53,22 +53,49 @@ const Card = ({ item }) => {
     packInfo = "2 packs",
     deliveryTime = "5 MINS",
     packOptions = ["2 x 1 kg - Multipack", "1 kg"],
+    quantity = 0,
   } = item;
 
-  // ✅ Trigger redux thunk on button click
   const handleAddToCart = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    dispatch(addItemToCart(id)); // thunk call
+    dispatch(addItemToCart(id));
   };
 
   const imageUrl =
     image_urls?.[0] ||
     "https://www.bbassets.com/media/uploads/p/m/10000102_20-fresho-cucumber.jpg?tr=w-154,q-80";
 
+  const isOutOfStock = quantity === 0;
+  const isLowStock = quantity > 0 && quantity < 5;
+  const warningMessage = isOutOfStock
+    ? "Out of stock"
+    : isLowStock
+    ? `Only ${quantity} items left`
+    : null;
+
   return (
-    <Link to={`/product/${id}`} state={{ item }} className="block">
-      <article className="w-full bg-white border border-gray-200 rounded-lg shadow-sm font-sans flex flex-col">
+    <Link
+      to={`/product/${id}`} // Always redirect to the product page
+      state={{ item }}
+      className="block relative" // Removed pointer-events-none
+      aria-disabled={isOutOfStock}
+    >
+      {/* Out of Stock Badge */}
+      {isOutOfStock && (
+        <div
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 px-4 py-2 bg-white text-gray-800 border-2 text-sm font-bold rounded-full shadow-lg"
+          style={{ transform: "translate(-10%, -280%)" }} // Using style for precise centering
+        >
+          Out of Stock
+        </div>
+      )}
+
+      <article
+        className={`w-full bg-white border border-gray-200 rounded-lg shadow-sm font-sans flex flex-col transition-all duration-300 ${
+          isOutOfStock ? "opacity-50" : ""
+        }`}
+      >
         {/* Image + Discount Tag */}
         <div className="relative p-2">
           <div className="absolute top-2 left-2 bg-green-700 text-white text-xs font-bold px-2 py-1 rounded-md z-10">
@@ -91,9 +118,7 @@ const Card = ({ item }) => {
         {/* Content */}
         <div className="p-3 flex-grow flex flex-col">
           <div className="flex justify-between items-center">
-            <p className="text-sm text-gray-500">
-              {manufacturer || "Brand"}
-            </p>
+            <p className="text-sm text-gray-500">{manufacturer || "Brand"}</p>
             <span className="bg-yellow-100 text-gray-600 text-xs font-semibold px-2 py-1 rounded-full flex items-center">
               <ClockIcon />
               {deliveryTime}
@@ -125,6 +150,13 @@ const Card = ({ item }) => {
             </p>
           </div>
 
+          {/* Stock Warning */}
+          {warningMessage && (
+            <div className="mt-2 text-sm font-semibold text-red-600">
+              {warningMessage}
+            </div>
+          )}
+
           {/* Actions */}
           <div className="mt-3 flex items-center justify-between space-x-2">
             <button className="p-2 border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-100 transition-colors">
@@ -132,7 +164,12 @@ const Card = ({ item }) => {
             </button>
             <button
               onClick={handleAddToCart}
-              className="w-full border border-red-500 text-red-500 font-bold py-2 px-4 rounded-lg hover:bg-red-500 hover:text-white transition-all duration-300"
+              disabled={isOutOfStock}
+              className={`w-full border text-red-500 font-bold py-2 px-4 rounded-lg transition-all duration-300 ${
+                isOutOfStock
+                  ? "border-gray-300 text-gray-400 cursor-not-allowed"
+                  : "border-red-500 hover:bg-red-500 hover:text-white"
+              }`}
             >
               Add
             </button>

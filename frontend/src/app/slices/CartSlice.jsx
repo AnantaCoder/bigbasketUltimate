@@ -1,28 +1,24 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { toast } from "react-toastify";
-import api from "../../services/api"; // Your configured axios instance
+import api from "../../services/api"; 
 
 const initialState = {
   cart: null,
-  savedForLater: [], // Added savedForLater items array
-  status: "idle", // 'idle' | 'loading' | 'succeeded' | 'failed'
+  savedForLater: [], 
+  status: "idle",
   error: null,
 };
 
-// ## Async Thunks for API Interaction
 
-// Fetch the user's cart
 export const fetchCart = createAsyncThunk(
   "cart/fetchCart",
   async (_, { rejectWithValue }) => {
     try {
-      // 1. Get token from localStorage
       const token = localStorage.getItem("access_token");
       if (!token) {
         return rejectWithValue("User not authenticated");
       }
 
-      // 2. Add headers to the request
       const config = {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -37,13 +33,11 @@ export const fetchCart = createAsyncThunk(
   }
 );
 
-// Add an item to the cart
 export const addItemToCart = createAsyncThunk(
   "cart/addItemToCart",
   async (itemId, { rejectWithValue }) => {
     const toastId = toast.loading("Adding to cart...");
     try {
-      // 1. Get token from localStorage
       const token = localStorage.getItem("access_token");
       if (!token) {
         toast.update(toastId, {
@@ -55,7 +49,6 @@ export const addItemToCart = createAsyncThunk(
         return rejectWithValue("User not authenticated");
       }
 
-      // 2. Add headers to the request
       const config = {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -86,13 +79,11 @@ export const addItemToCart = createAsyncThunk(
   }
 );
 
-// Remove an item from the cart
 export const removeItemFromCart = createAsyncThunk(
   "cart/removeItemFromCart",
   async (itemId, { rejectWithValue }) => {
     const toastId = toast.loading("Removing item...");
     try {
-      // 1. Get token from localStorage
       const token = localStorage.getItem("access_token");
       if (!token) {
         toast.update(toastId, {
@@ -104,7 +95,6 @@ export const removeItemFromCart = createAsyncThunk(
         return rejectWithValue("User not authenticated");
       }
 
-      // 2. Add headers to the request (for axios delete with body)
       const config = {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -132,7 +122,6 @@ export const removeItemFromCart = createAsyncThunk(
   }
 );
 
-// Update item quantity in the cart
 export const updateItemQuantity = createAsyncThunk(
   "cart/updateItemQuantity",
   async ({ itemId, quantity }, { rejectWithValue }) => {
@@ -181,7 +170,6 @@ export const updateItemQuantity = createAsyncThunk(
   }
 );
 
-// Update quantity in cart
 export const updateQuantityInCart = createAsyncThunk(
   "cart/updateQuantity",
   async ({ itemId, quantity }) => {
