@@ -282,6 +282,13 @@ class OrderUserSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Pincode must be 6 digits.")
         return value
 
+    def validate(self, attrs):
+        city = attrs.get("city", "").lower().strip()
+        state = attrs.get("state", "").lower().strip()
+        if city not in ["bangalore", "bengaluru"] or state != "karnataka":
+            raise serializers.ValidationError("Delivery is only available in India.")
+        return attrs
+
 
 # ==============================
 # OrderItem Serializer

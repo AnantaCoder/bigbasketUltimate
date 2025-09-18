@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import Sidebar from "../components/Sidebar";
 import Breadcrumb from "../components/Breadcrumb";
-import OTPModal from "../components/OTPModal";
 import { Pencil, Check, X, Plus, Trash2, MapPin } from "lucide-react";
 import { useSelector, useDispatch } from "react-redux";
 import api from "../services/api";
@@ -32,16 +31,8 @@ const Profile = () => {
     is_default: false,
   });
 
-  // OTP modal state
-  const [otpModal, setOtpModal] = useState({
-    isOpen: false,
-    title: "",
-    description: "",
-    onSubmit: null,
-  });
-
   // Loading states
-  const [saving, setSaving] = useState(false);
+  const loading = useSelector((state) => state.auth.loading);
 
   useEffect(() => {
     if (activeTab === "deliveryAddresses") {
@@ -79,48 +70,17 @@ const Profile = () => {
     if (field === "phone") data.phone = phone;
     if (field === "email") data.email = email;
 
-    // If changing email or phone, request OTP first
-    if (
-      (field === "email" && email !== user.email) ||
-      (field === "phone" && phone !== user.phone)
-    ) {
-      try {
-        await api.post("/accounts/request-profile-otp/");
-        setOtpModal({
-          isOpen: true,
-          title: `Verify ${field === "email" ? "Email" : "Phone"} Change`,
-          description: `Enter the OTP sent to your current email to confirm the change.`,
-          onSubmit: async (otp) => {
-            await updateProfileWithOTP({ ...data, otp });
-          },
-        });
-      } catch {
-        alert("Failed to send OTP. Please try again.");
-      }
-      return;
-    }
-
-    // For name, save directly
     await updateProfile(data);
   };
 
   const updateProfile = async (data) => {
-    setSaving(true);
     try {
-      const response = await api.patch("/accounts/profile/", data);
-      dispatch(updateUser(response.data));
+      await dispatch(updateUser(data)).unwrap();
       setEditingField(null);
       alert("Profile updated successfully!");
     } catch {
       alert("Failed to update profile. Please try again.");
-    } finally {
-      setSaving(false);
     }
-  };
-
-  const updateProfileWithOTP = async (data) => {
-    await updateProfile(data);
-    setOtpModal({ ...otpModal, isOpen: false });
   };
 
   const renderEditableField = (label, fieldKey, value, setValue) => {
@@ -144,7 +104,7 @@ const Profile = () => {
             <button
               aria-label={`Save ${label}`}
               onClick={() => saveField(fieldKey)}
-              disabled={saving}
+              disabled={loading}
               className="text-green-600 disabled:opacity-50"
             >
               <Check className="w-5 h-5" />
@@ -529,7 +489,6 @@ const Profile = () => {
               </p>
               <p className="text-sm text-gray-500 mt-2">
                 To change your email address, edit it in the Edit Profile tab.
-                OTP verification will be required.
               </p>
             </div>
           </div>
@@ -586,13 +545,6 @@ const Profile = () => {
           </ul>
         </nav>
         {renderContent()}
-        <OTPModal
-          isOpen={otpModal.isOpen}
-          onClose={() => setOtpModal({ ...otpModal, isOpen: false })}
-          onSubmit={otpModal.onSubmit}
-          title={otpModal.title}
-          description={otpModal.description}
-        />
       </div>
     </div>
   );

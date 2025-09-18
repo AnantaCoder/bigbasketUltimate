@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import { useSelector, useDispatch } from "react-redux";
+import { useNavigate } from "react-router-dom";
 import {
   selectCart,
   fetchCart,
@@ -11,6 +12,7 @@ import RazorpayCheckout from "../components/RazorpayCheckout";
 
 function CheckoutPage() {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const cart = useSelector(selectCart);
   const status = useSelector(selectCartStatus);
   const authToken = useSelector((s) => s.auth?.accessToken);
@@ -255,7 +257,7 @@ function CheckoutPage() {
       setOrderUserId(respData.id);
     } catch (err) {
       console.error(err);
-      toast.error("Failed to save address. Check your backend or network.");
+      toast.error("Delivery is only available for Bengaluru only");
     }
   };
 
@@ -584,7 +586,7 @@ function CheckoutPage() {
                 onSuccess={(data) => {
                   toast.success("Payment successful!");
                   console.log("Payment Data:", data);
-                  // Here you can handle post-payment logic like redirecting to order confirmation
+                  navigate("/my-orders");
                 }}
                 onError={(error) => {
                   toast.error("Payment failed: " + error);

@@ -2,7 +2,6 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { toast } from "react-toastify";
 import api from "../../services/api";
 
-
 export const updateUser = createAsyncThunk(
   "auth/updateUser",
   async (userData, { rejectWithValue }) => {
@@ -343,6 +342,20 @@ const authSlice = createSlice({
         state.refreshToken = null;
         state.isAuthenticated = false;
         state.error = null;
+      })
+      // Update User
+      .addCase(updateUser.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateUser.fulfilled, (state, action) => {
+        state.loading = false;
+        state.user = action.payload;
+        state.error = null;
+      })
+      .addCase(updateUser.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
       });
   },
 });

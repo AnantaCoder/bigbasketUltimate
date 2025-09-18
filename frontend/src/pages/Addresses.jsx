@@ -162,7 +162,7 @@ const Addresses = () => {
       });
       fetchAddresses(page);
     } catch (err) {
-      console.error(err);
+      console.log(err.data);
       toast.error("Failed to save address");
     } finally {
       setManualLoading(false);

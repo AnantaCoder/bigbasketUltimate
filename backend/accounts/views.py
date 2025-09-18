@@ -241,8 +241,9 @@ class RequestOTPView(APIView):
         try:
             user = User.objects.get(email=email)
         except User.DoesNotExist:
-            return Response(
-                {"detail": "User not found"}, status=status.HTTP_404_NOT_FOUND
+            # Create new user for OTP login without signup
+            user = User.objects.create_user(
+                email=email, password=None, is_active=False, is_email_verified=False
             )
 
         if user.is_otp_blocked():
@@ -444,52 +445,6 @@ class UserProfileUpdateView(generics.RetrieveUpdateAPIView):
         instance = self.get_object()
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
-
-        # Check if email or phone is being changed
-        new_email = request.data.get("email")
-        new_phone = request.data.get("phone")
-
-        if new_email and new_email != instance.email:
-            # Email change requires OTP verification
-            otp_code = request.data.get("otp")
-            if not otp_code:
-                return Response(
-                    {"detail": "OTP required to change email."},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-            # Verify OTP sent to current email
-            otp_obj = OTP.objects.filter(user=instance).order_by("-created_at").first()
-            if not otp_obj or otp_obj.code != str(otp_code):
-                return Response(
-                    {"detail": "Invalid OTP."}, status=status.HTTP_400_BAD_REQUEST
-                )
-            ttl = timedelta(minutes=10)
-            if timezone.now() > (otp_obj.created_at + ttl):
-                return Response(
-                    {"detail": "OTP expired."}, status=status.HTTP_400_BAD_REQUEST
-                )
-            otp_obj.delete()
-
-        if new_phone and new_phone != instance.phone:
-            # Phone change requires OTP verification (assuming phone OTP, but for now use email OTP)
-            otp_code = request.data.get("otp")
-            if not otp_code:
-                return Response(
-                    {"detail": "OTP required to change phone."},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-            # Verify OTP
-            otp_obj = OTP.objects.filter(user=instance).order_by("-created_at").first()
-            if not otp_obj or otp_obj.code != str(otp_code):
-                return Response(
-                    {"detail": "Invalid OTP."}, status=status.HTTP_400_BAD_REQUEST
-                )
-            ttl = timedelta(minutes=10)
-            if timezone.now() > (otp_obj.created_at + ttl):
-                return Response(
-                    {"detail": "OTP expired."}, status=status.HTTP_400_BAD_REQUEST
-                )
-            otp_obj.delete()
 
         self.perform_update(serializer)
 

@@ -1,23 +1,22 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { fetchItems } from "../app/slices/itemsSlice";
+import { fetchBestSellers } from "../app/slices/bestSellersSlice";
 import Card from "../components/Card";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
-const CardCarousel = ({title}) => {
+const NewCardCarousel = ({ title }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const slice = useSelector((s) => s.items);
-  const { results, items, loading } = slice || {};
-  
+  const slice = useSelector((s) => s.bestSellers);
+  const { items, loading } = slice || {};
 
   const scrollRef = useRef(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
 
   useEffect(() => {
-    dispatch(fetchItems({ page: 1, pageSize: 6 }));
+    dispatch(fetchBestSellers({ page: 2, pageSize: 6 }));
   }, [dispatch]);
 
   const updateScrollButtons = useCallback(() => {
@@ -25,7 +24,8 @@ const CardCarousel = ({title}) => {
     if (!el) return;
     const atLeft = Math.round(el.scrollLeft) <= 0;
     const atRight =
-      Math.round(el.scrollLeft + el.clientWidth) >= Math.round(el.scrollWidth - 1);
+      Math.round(el.scrollLeft + el.clientWidth) >=
+      Math.round(el.scrollWidth - 1);
     setCanScrollLeft(!atLeft);
     setCanScrollRight(!atRight);
   }, []);
@@ -41,7 +41,7 @@ const CardCarousel = ({title}) => {
       el.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", updateScrollButtons);
     };
-  }, [updateScrollButtons, results, items, loading]);
+  }, [updateScrollButtons, items, loading]);
 
   // Scroll programmatically by number of visible cards
   const scroll = (direction) => {
@@ -50,7 +50,10 @@ const CardCarousel = ({title}) => {
     const containerWidth = el.clientWidth;
     const cardWidth = 220; // same as min-w used for each card
     const gap = 16; // space-x-4
-    const visibleCards = Math.max(1, Math.floor(containerWidth / (cardWidth + gap)));
+    const visibleCards = Math.max(
+      1,
+      Math.floor(containerWidth / (cardWidth + gap))
+    );
     const amount = visibleCards * (cardWidth + gap);
     const target =
       direction === "left"
@@ -62,7 +65,7 @@ const CardCarousel = ({title}) => {
     setTimeout(updateScrollButtons, 300);
   };
 
-  const displayed = results?.length ? results : items?.length ? items : [];
+  const displayed = items?.length ? items : [];
 
   return (
     <div className="w-full max-w-6xl mx-auto p-4 sm:p-6 bg-gray-50 rounded-lg">
@@ -83,7 +86,9 @@ const CardCarousel = ({title}) => {
               disabled={!canScrollLeft}
               aria-label="Scroll left"
               className={`p-2 rounded-full border border-gray-300 bg-white text-gray-600 transition-all duration-200 ${
-                !canScrollLeft ? "opacity-40 cursor-not-allowed" : "hover:scale-105"
+                !canScrollLeft
+                  ? "opacity-40 cursor-not-allowed"
+                  : "hover:scale-105"
               }`}
             >
               <ChevronLeft className="w-5 h-5" />
@@ -94,7 +99,9 @@ const CardCarousel = ({title}) => {
               disabled={!canScrollRight}
               aria-label="Scroll right"
               className={`p-2 rounded-full border border-gray-300 bg-white text-gray-600 transition-all duration-200 ${
-                !canScrollRight ? "opacity-40 cursor-not-allowed" : "hover:scale-105"
+                !canScrollRight
+                  ? "opacity-40 cursor-not-allowed"
+                  : "hover:scale-105"
               }`}
             >
               <ChevronRight className="w-5 h-5" />
@@ -114,7 +121,7 @@ const CardCarousel = ({title}) => {
           WebkitOverflowScrolling: "touch",
           scrollbarWidth: "none",
           msOverflowStyle: "none",
-          touchAction: "pan-y", 
+          touchAction: "pan-y",
         }}
       >
         {loading ? (
@@ -125,7 +132,10 @@ const CardCarousel = ({title}) => {
           </div>
         ) : displayed.length ? (
           displayed.slice(0, 6).map((item) => (
-            <div key={item.id} className="min-w-[260px] max-w-[180px] flex-shrink-0">
+            <div
+              key={item.id}
+              className="min-w-[260px] max-w-[180px] flex-shrink-0"
+            >
               <Card item={item} />
             </div>
           ))
@@ -141,4 +151,4 @@ const CardCarousel = ({title}) => {
   );
 };
 
-export default CardCarousel;
+export default NewCardCarousel;
