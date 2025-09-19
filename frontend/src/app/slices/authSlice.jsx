@@ -6,7 +6,7 @@ export const updateUser = createAsyncThunk(
   "auth/updateUser",
   async (userData, { rejectWithValue }) => {
     try {
-      const response = await api.patch("/accounts/profile/", userData);
+      const response = await api.patch("auth/profile/", userData);
       const updatedUser = response.data;
       localStorage.setItem("user", JSON.stringify(updatedUser));
       return updatedUser;

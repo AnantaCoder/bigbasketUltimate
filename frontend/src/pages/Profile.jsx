@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import Breadcrumb from "../components/Breadcrumb";
 import { Pencil, Check, X, Plus, Trash2, MapPin } from "lucide-react";
@@ -7,6 +8,7 @@ import api from "../services/api";
 import { updateUser } from "../app/slices/authSlice";
 
 const Profile = () => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("editProfile");
   const user = useSelector((state) => state.auth.user);
   const dispatch = useDispatch();
@@ -22,14 +24,6 @@ const Profile = () => {
   const [addresses, setAddresses] = useState([]);
   const [loadingAddresses, setLoadingAddresses] = useState(false);
   const [editingAddress, setEditingAddress] = useState(null);
-  const [newAddress, setNewAddress] = useState({
-    phone_no: "",
-    address: "",
-    city: "",
-    state: "",
-    pincode: "",
-    is_default: false,
-  });
 
   // Loading states
   const loading = useSelector((state) => state.auth.loading);
@@ -129,53 +123,6 @@ const Profile = () => {
     );
   };
 
-  const validateAddress = (addr) => {
-    const errors = [];
-    if (!addr.phone_no || !/^\d{10,15}$/.test(addr.phone_no)) {
-      errors.push("Phone number must be 10-15 digits.");
-    }
-    if (!addr.address.trim()) {
-      errors.push("Address is required.");
-    }
-    if (!addr.city.trim()) {
-      errors.push("City is required.");
-    }
-    if (!addr.state.trim()) {
-      errors.push("State is required.");
-    }
-    if (!addr.pincode || !/^\d{6}$/.test(addr.pincode)) {
-      errors.push("Pincode must be 6 digits.");
-    }
-    return errors;
-  };
-
-  const handleAddAddress = async () => {
-    const errors = validateAddress(newAddress);
-    if (errors.length > 0) {
-      alert(errors.join("\n"));
-      return;
-    }
-    try {
-      await api.post("/store/order-users/", newAddress);
-      setNewAddress({
-        phone_no: "",
-        address: "",
-        city: "",
-        state: "",
-        pincode: "",
-        is_default: false,
-      });
-      fetchAddresses();
-      alert("Address added successfully!");
-    } catch (error) {
-      const message =
-        error.response?.data?.detail ||
-        error.response?.data?.message ||
-        "Failed to add address. Please try again.";
-      alert(message);
-    }
-  };
-
   const handleEditAddress = async (id, updatedAddress) => {
     try {
       await api.patch(`/store/order-users/${id}/`, updatedAddress);
@@ -227,7 +174,7 @@ const Profile = () => {
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-semibold">Delivery Addresses</h2>
               <button
-                onClick={() => setEditingAddress("new")}
+                onClick={() => navigate("/addresses")}
                 className="flex items-center space-x-2 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
               >
                 <Plus className="w-4 h-4" />
@@ -391,90 +338,6 @@ const Profile = () => {
                     )}
                   </div>
                 ))}
-                {editingAddress === "new" && (
-                  <div className="border rounded p-4 space-y-2">
-                    <input
-                      type="text"
-                      placeholder="Phone"
-                      value={newAddress.phone_no}
-                      onChange={(e) =>
-                        setNewAddress({
-                          ...newAddress,
-                          phone_no: e.target.value,
-                        })
-                      }
-                      className="w-full p-2 border rounded"
-                    />
-                    <textarea
-                      placeholder="Address"
-                      value={newAddress.address}
-                      onChange={(e) =>
-                        setNewAddress({
-                          ...newAddress,
-                          address: e.target.value,
-                        })
-                      }
-                      className="w-full p-2 border rounded"
-                    />
-                    <input
-                      type="text"
-                      placeholder="City"
-                      value={newAddress.city}
-                      onChange={(e) =>
-                        setNewAddress({ ...newAddress, city: e.target.value })
-                      }
-                      className="w-full p-2 border rounded"
-                    />
-                    <input
-                      type="text"
-                      placeholder="State"
-                      value={newAddress.state}
-                      onChange={(e) =>
-                        setNewAddress({ ...newAddress, state: e.target.value })
-                      }
-                      className="w-full p-2 border rounded"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Pincode"
-                      value={newAddress.pincode}
-                      onChange={(e) =>
-                        setNewAddress({
-                          ...newAddress,
-                          pincode: e.target.value,
-                        })
-                      }
-                      className="w-full p-2 border rounded"
-                    />
-                    <label className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        checked={newAddress.is_default}
-                        onChange={(e) =>
-                          setNewAddress({
-                            ...newAddress,
-                            is_default: e.target.checked,
-                          })
-                        }
-                      />
-                      <span>Set as default</span>
-                    </label>
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={handleAddAddress}
-                        className="bg-green-600 text-white px-4 py-2 rounded"
-                      >
-                        Add
-                      </button>
-                      <button
-                        onClick={() => setEditingAddress(null)}
-                        className="bg-gray-600 text-white px-4 py-2 rounded"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
-                )}
               </div>
             )}
           </div>
