@@ -91,13 +91,18 @@ class CategoryItemsAPIView(ListAPIView):
         except Category.DoesNotExist:
             return Item.objects.none()
 
-        # Include items in this category
-        items = Item.objects.filter(category=category)
+        # Get all descendant categories recursively
+        def get_all_descendants(cat):
+            descendants = []
+            for sub in cat.subcategories.all():
+                descendants.append(sub)
+                descendants.extend(get_all_descendants(sub))
+            return descendants
 
-        # (Optional) also include items in subcategories
-        subcategories = category.subcategories.all()
-        if subcategories.exists():
-            items = Item.objects.filter(category__in=subcategories)
+        all_categories = [category] + get_all_descendants(category)
+
+        # Include items in this category and all subcategories recursively
+        items = Item.objects.filter(category__in=all_categories)
 
         return items
 

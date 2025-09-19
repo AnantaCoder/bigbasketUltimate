@@ -1,3 +1,4 @@
+// components/Card.jsx
 import React from "react";
 import { Link } from "react-router-dom";
 import { useDispatch } from "react-redux";
@@ -50,13 +51,14 @@ const Card = ({ item }) => {
     manufacturer,
     originalPrice = price * 1.35,
     discount = "26% OFF",
-    packInfo = "2 packs",
+    packInfo = "",
     deliveryTime = "5 MINS",
     packOptions = ["2 x 1 kg - Multipack", "1 kg"],
     quantity = 0,
   } = item;
 
   const handleAddToCart = (e) => {
+    // prevent Link navigation when clicking Add
     e.preventDefault();
     e.stopPropagation();
     dispatch(addItemToCart(id));
@@ -76,23 +78,13 @@ const Card = ({ item }) => {
 
   return (
     <Link
-      to={`/product/${id}`} // Always redirect to the product page
+      to={`/product/${id}`}
       state={{ item }}
-      className="block relative" // Removed pointer-events-none
+      className="block h-full" /* ensure Link occupies full height so article can stretch */
       aria-disabled={isOutOfStock}
     >
-      {/* Out of Stock Badge */}
-      {isOutOfStock && (
-        <div
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 px-4 py-2 bg-white text-gray-800 border-2 text-sm font-bold rounded-full shadow-lg"
-          style={{ transform: "translate(-10%, -280%)" }} // Using style for precise centering
-        >
-          Out of Stock
-        </div>
-      )}
-
       <article
-        className={`w-full bg-white border border-gray-200 rounded-lg shadow-sm font-sans flex flex-col transition-all duration-300 ${
+        className={`w-full h-full bg-white border border-gray-200 rounded-lg shadow-sm font-sans flex flex-col transition-all duration-300 overflow-hidden ${
           isOutOfStock ? "opacity-50" : ""
         }`}
       >
@@ -101,13 +93,16 @@ const Card = ({ item }) => {
           <div className="absolute top-2 left-2 bg-green-700 text-white text-xs font-bold px-2 py-1 rounded-md z-10">
             {discount}
           </div>
-          <div className="overflow-hidden rounded-md">
+
+          {/* fixed image area to keep cards same visual height */}
+          <div className="overflow-hidden rounded-md w-full h-44 md:h-52">
             <img
               src={imageUrl}
               alt={item_name}
-              className="w-full aspect-square object-cover"
+              className="w-full h-full object-cover"
             />
           </div>
+
           {packInfo && (
             <div className="absolute bottom-4 left-4 bg-black bg-opacity-50 text-white text-xs font-semibold px-3 py-1 rounded-md">
               {packInfo}
@@ -116,7 +111,7 @@ const Card = ({ item }) => {
         </div>
 
         {/* Content */}
-        <div className="p-3 flex-grow flex flex-col">
+        <div className="p-3 flex flex-col flex-1"> {/* flex-1 to help equalize */}
           <div className="flex justify-between items-center">
             <p className="text-sm text-gray-500">{manufacturer || "Brand"}</p>
             <span className="bg-yellow-100 text-gray-600 text-xs font-semibold px-2 py-1 rounded-full flex items-center">
@@ -125,7 +120,12 @@ const Card = ({ item }) => {
             </span>
           </div>
 
-          <h3 className="mt-2 text-base font-semibold text-gray-800 truncate">
+          {/* Title with max height to avoid pushing layout */}
+          <h3
+            className="mt-2 text-base font-semibold text-gray-800"
+            style={{ lineHeight: "1.1", maxHeight: "2.2rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+            title={item_name}
+          >
             {item_name}
           </h3>
 
@@ -138,7 +138,8 @@ const Card = ({ item }) => {
             ))}
           </select>
 
-          <div className="flex-grow"></div>
+          {/* spacer expands to push price/actions to the bottom */}
+          <div className="flex-1" />
 
           {/* Price */}
           <div className="mt-4">
@@ -159,13 +160,22 @@ const Card = ({ item }) => {
 
           {/* Actions */}
           <div className="mt-3 flex items-center justify-between space-x-2">
-            <button className="p-2 border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-100 transition-colors">
+            <button
+              type="button"
+              className="p-2 border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-100 transition-colors"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                // Bookmark action placeholder
+              }}
+            >
               <BookmarkIcon />
             </button>
+
             <button
               onClick={handleAddToCart}
               disabled={isOutOfStock}
-              className={`w-full border text-red-500 font-bold py-2 px-4 rounded-lg transition-all duration-300 ${
+              className={`w-full ml-2 border text-red-500 font-bold py-2 px-4 rounded-lg transition-all duration-300 ${
                 isOutOfStock
                   ? "border-gray-300 text-gray-400 cursor-not-allowed"
                   : "border-red-500 hover:bg-red-500 hover:text-white"

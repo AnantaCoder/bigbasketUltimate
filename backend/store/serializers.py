@@ -16,7 +16,7 @@ class RecursiveField(serializers.Serializer):
         depth = self.context.get("depth", 1)
 
         # prevent infinite nesting
-        if depth > 2:  # ⬅️ limit recursion depth here
+        if depth > 5:  # ⬅️ limit recursion depth here
             return None
 
         serializer = parent_serializer(

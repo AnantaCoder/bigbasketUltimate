@@ -12,45 +12,80 @@ class ItemInline(admin.TabularInline):
 
 class SubCategoryInline(admin.TabularInline):
     model = Category
-    fk_name = "parent"   # tell Django this inline relates to parent → subcategories
+    fk_name = "parent"  # tell Django this inline relates to parent → subcategories
     extra = 1
     show_change_link = True
 
 
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
-    list_display = ("name", "parent", "is_active", "discount", "created_at", "image_preview")
+    list_display = (
+        "name",
+        "get_full_path",
+        "parent",
+        "is_active",
+        "discount",
+        "created_at",
+        "image_preview",
+    )
     search_fields = ("name", "description", "popular_brands")
     list_filter = ("is_active", "parent")
     inlines = [ItemInline, SubCategoryInline]
-    readonly_fields = ("image_preview", "created_at")
+    readonly_fields = ("image_preview", "created_at", "get_full_path")
 
     fieldsets = (
-        (None, {
-            "fields": (
-                "name", "description", "is_active", "discount", "parent"
-            )
-        }),
-        ("Appearance", {
-            "fields": (
-                "image", "referral_image", "icon", "color", "popular_brands"
-            )
-        }),
+        (
+            None,
+            {
+                "fields": (
+                    "name",
+                    "description",
+                    "is_active",
+                    "discount",
+                    "parent",
+                    "get_full_path",
+                )
+            },
+        ),
+        (
+            "Appearance",
+            {"fields": ("image", "referral_image", "icon", "color", "popular_brands")},
+        ),
         ("Meta", {"fields": ("created_at",)}),
     )
+
+    def get_full_path(self, obj):
+        """Display the full hierarchical path of the category"""
+        path = []
+        current = obj
+        while current:
+            path.insert(0, current.name)
+            current = current.parent
+        return " > ".join(path)
+
+    get_full_path.short_description = "Full Path"
 
     def image_preview(self, obj):
         if getattr(obj, "image", None):
             return format_html('<img src="{}" style="max-height:100px;"/>', obj.image)
         return "-"
+
     image_preview.short_description = "Image preview"
 
 
 @admin.register(Item)
 class ItemAdmin(admin.ModelAdmin):
     list_display = (
-        "item_name", "manufacturer", "seller", "category", "price",
-        "quantity", "is_active", "sku", "created_at", "image_preview"
+        "item_name",
+        "manufacturer",
+        "seller",
+        "category",
+        "price",
+        "quantity",
+        "is_active",
+        "sku",
+        "created_at",
+        "image_preview",
     )
     list_editable = ("price", "quantity", "is_active")
     list_filter = ("category", "is_active", "manufacturer")
@@ -58,12 +93,19 @@ class ItemAdmin(admin.ModelAdmin):
     readonly_fields = ("image_preview", "created_at", "updated_at")
 
     fieldsets = (
-        (None, {
-            "fields": (
-                "item_name", "item_type", "manufacturer", "seller",
-                "category", "sku"
-            )
-        }),
+        (
+            None,
+            {
+                "fields": (
+                    "item_name",
+                    "item_type",
+                    "manufacturer",
+                    "seller",
+                    "category",
+                    "sku",
+                )
+            },
+        ),
         ("Inventory & Pricing", {"fields": ("quantity", "price", "is_active")}),
         ("Media", {"fields": ("image_urls", "image_preview")}),
         ("Meta", {"fields": ("created_at", "updated_at")}),
@@ -77,12 +119,15 @@ class ItemAdmin(admin.ModelAdmin):
         if first:
             return format_html('<img src="{}" style="max-height:100px;"/>', first)
         return "-"
+
     image_preview.short_description = "Image preview"
 
     def mark_active(self, request, queryset):
         queryset.update(is_active=True)
+
     mark_active.short_description = "Mark selected items as active"
 
     def mark_inactive(self, request, queryset):
         queryset.update(is_active=False)
+
     mark_inactive.short_description = "Mark selected items as inactive"
