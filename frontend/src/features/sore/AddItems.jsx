@@ -18,9 +18,7 @@ import { createItem } from "../../app/slices/itemsSlice";
 function AddItems() {
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
-  const { categories: categoryList, loading: categoriesLoading } = useSelector(
-    (state) => state.categories
-  );
+  const { categories: categoryList } = useSelector((state) => state.categories);
   const { creating } = useSelector((state) => state.items);
 
   const [formData, setFormData] = useState({
@@ -33,6 +31,9 @@ function AddItems() {
     description: "",
     category: "",
   });
+  const [selectedMainCategory, setSelectedMainCategory] = useState("");
+  const [selectedSubcategory, setSelectedSubcategory] = useState("");
+  const [selectedSubsubcategory, setSelectedSubsubcategory] = useState("");
   const [imageFiles, setImageFiles] = useState([]);
   const [imagePreviews, setImagePreviews] = useState([]);
 
@@ -47,6 +48,9 @@ function AddItems() {
       description: "",
       category: "",
     });
+    setSelectedMainCategory("");
+    setSelectedSubcategory("");
+    setSelectedSubsubcategory("");
     setImageFiles([]);
     setImagePreviews([]);
   }, []);
@@ -80,11 +84,36 @@ function AddItems() {
       ...prev,
       [name]:
         name === "quantity"
-          ? value === "" ? "" : parseInt(value, 10)
+          ? value === ""
+            ? ""
+            : parseInt(value, 10)
           : name === "price"
-          ? value === "" ? "" : parseFloat(value)
+          ? value === ""
+            ? ""
+            : parseFloat(value)
           : value,
     }));
+  };
+
+  const handleMainCategoryChange = (e) => {
+    const value = e.target.value;
+    setSelectedMainCategory(value);
+    setSelectedSubcategory("");
+    setSelectedSubsubcategory("");
+    setFormData((prev) => ({ ...prev, category: value }));
+  };
+
+  const handleSubcategoryChange = (e) => {
+    const value = e.target.value;
+    setSelectedSubcategory(value);
+    setSelectedSubsubcategory("");
+    setFormData((prev) => ({ ...prev, category: value }));
+  };
+
+  const handleSubsubcategoryChange = (e) => {
+    const value = e.target.value;
+    setSelectedSubsubcategory(value);
+    setFormData((prev) => ({ ...prev, category: value }));
   };
 
   const handleImageChange = (e) => {
@@ -135,7 +164,9 @@ function AddItems() {
           <div className="inline-flex items-center justify-center w-16 h-16 bg-amber-500 rounded-2xl mb-4 shadow-md">
             <Package className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-4xl font-bold text-gray-800 mb-2">Add New Item</h1>
+          <h1 className="text-4xl font-bold text-gray-800 mb-2">
+            Add New Item
+          </h1>
           <p className="text-gray-600">List your products in the marketplace</p>
         </div>
 
@@ -248,25 +279,81 @@ function AddItems() {
                   />
                 </div>
 
-                {/* Category */}
-                <select
-                  name="category"
-                  value={formData.category}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl text-gray-900 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors"
-                >
-                  <option value="" disabled>
-                    {categoriesLoading
-                      ? "Loading categories..."
-                      : "Select a category"}
-                  </option>
-                  {categoryList.map((category) => (
-                    <option key={category.id} value={category.id}>
-                      {category.name}
-                    </option>
-                  ))}
-                </select>
+                {/* Hierarchical Category Selection */}
+                <div className="lg:col-span-2 space-y-4">
+                  <div>
+                    <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
+                      <Layers className="w-4 h-4 mr-2" />
+                      Main Category *
+                    </label>
+                    <select
+                      value={selectedMainCategory}
+                      onChange={handleMainCategoryChange}
+                      required
+                      className="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl text-gray-900 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors"
+                    >
+                      <option value="">Select main category</option>
+                      {categoryList.map((category) => (
+                        <option key={category.id} value={category.id}>
+                          {category.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {selectedMainCategory && (
+                    <div>
+                      <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
+                        <Layers className="w-4 h-4 mr-2" />
+                        Subcategory
+                      </label>
+                      <select
+                        value={selectedSubcategory}
+                        onChange={handleSubcategoryChange}
+                        className="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl text-gray-900 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors"
+                      >
+                        <option value="">Select subcategory</option>
+                        {categoryList
+                          .find(
+                            (cat) => cat.id === parseInt(selectedMainCategory)
+                          )
+                          ?.subcategories?.map((sub) => (
+                            <option key={sub.id} value={sub.id}>
+                              {sub.name}
+                            </option>
+                          ))}
+                      </select>
+                    </div>
+                  )}
+
+                  {selectedSubcategory && (
+                    <div>
+                      <label className="flex items-center text-sm font-medium text-gray-700 mb-2">
+                        <Layers className="w-4 h-4 mr-2" />
+                        Sub-subcategory
+                      </label>
+                      <select
+                        value={selectedSubsubcategory}
+                        onChange={handleSubsubcategoryChange}
+                        className="w-full px-4 py-3 bg-white border border-gray-300 rounded-xl text-gray-900 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors"
+                      >
+                        <option value="">Select sub-subcategory</option>
+                        {categoryList
+                          .find(
+                            (cat) => cat.id === parseInt(selectedMainCategory)
+                          )
+                          ?.subcategories?.find(
+                            (sub) => sub.id === parseInt(selectedSubcategory)
+                          )
+                          ?.subcategories?.map((subsub) => (
+                            <option key={subsub.id} value={subsub.id}>
+                              {subsub.name}
+                            </option>
+                          ))}
+                      </select>
+                    </div>
+                  )}
+                </div>
 
                 {/* Description */}
                 <div className="lg:col-span-2">
