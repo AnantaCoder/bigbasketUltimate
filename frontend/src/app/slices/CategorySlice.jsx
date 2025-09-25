@@ -5,7 +5,9 @@ import api from "../../services/api";
 export const fetchCategories = createAsyncThunk(
   "categories/fetchCategories",
   async ({ page = 1, pageSize = 50 }) => {
-    const response = await api.get(`/store/categories/?page=${page}&page_size=${pageSize}`);
+    const response = await api.get(
+      `/store/categories/?page=${page}&page_size=${pageSize}`
+    );
     return response.data;
   }
 );
@@ -22,8 +24,9 @@ export const fetchCategoryById = createAsyncThunk(
 // Fetch items by category id
 export const fetchItemsByCategory = createAsyncThunk(
   "categories/fetchItemsByCategory",
-  async (id) => {
-    const response = await api.get(`/store/categories/${id}/items/`);
+  async ({ id, params = {} }) => {
+    const query = new URLSearchParams(params).toString();
+    const response = await api.get(`/store/categories/${id}/items/?${query}`);
     return response.data;
   }
 );

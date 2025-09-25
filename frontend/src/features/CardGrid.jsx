@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState, useCallback } from "react";
 import { useDispatch } from "react-redux";
 import Card from "../components/Card";
 import { fetchItems } from "../app/slices/itemsSlice";
+import { fetchItemsByCategory } from "../app/slices/CategorySlice";
 
 const PAGE_SIZE = 10;
 
@@ -44,7 +45,6 @@ const CardGrid = ({
   const [hasNext, setHasNext] = useState(true);
   const [loadingInitial, setLoadingInitial] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [error, setError] = useState(null);
 
   const sentinelRef = useRef(null);
   const observer = useRef(null);
@@ -54,7 +54,6 @@ const CardGrid = ({
       try {
         if (nextPage === 1) {
           setLoadingInitial(true);
-          setError(null);
         } else {
           setLoadingMore(true);
         }
@@ -62,8 +61,7 @@ const CardGrid = ({
         // Build params object with all filters
         const params = {
           page: nextPage,
-          pageSize: PAGE_SIZE,
-          category: categoryId,
+          page_size: PAGE_SIZE,
           sort: sortBy,
           search: search,
           ...filters,
@@ -80,7 +78,15 @@ const CardGrid = ({
           }
         });
 
-        const res = await dispatch(fetchItems(params)).unwrap();
+        let res;
+        if (categoryId) {
+          res = await dispatch(
+            fetchItemsByCategory({ id: categoryId, params })
+          ).unwrap();
+        } else {
+          const generalParams = { ...params, category: categoryId };
+          res = await dispatch(fetchItems(generalParams)).unwrap();
+        }
 
         if (nextPage === 1) {
           setItems(res.results || []);
@@ -99,7 +105,7 @@ const CardGrid = ({
         setHasNext(Boolean(res.next));
         setPage(nextPage);
       } catch (err) {
-        setError(err?.message || JSON.stringify(err) || "Failed to load items");
+        console.error("Failed to load items:", err);
       } finally {
         setLoadingInitial(false);
         setLoadingMore(false);

@@ -26,6 +26,7 @@ from rest_framework.filters import SearchFilter
 from django_filters.rest_framework import DjangoFilterBackend
 
 from rest_framework.generics import ListAPIView
+from rest_framework.pagination import PageNumberPagination
 from .models import Item, Category
 from .serializers import ItemSerializer
 
@@ -35,7 +36,7 @@ class CategoryListCreateAPIView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def get(self, request, format=None):
-        categories = Category.objects.filter(is_active=True, parent=None)
+        categories = Category.objects.filter(is_active=True)
         serializer = CategorySerializer(categories, many=True)
         return response.Response(serializer.data)
 
@@ -81,8 +82,18 @@ class ItemListCreateAPIView(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+class StandardPagination(PageNumberPagination):
+    page_size = 10
+    page_size_query_param = "page_size"
+    max_page_size = 100
+
+
 class CategoryItemsAPIView(ListAPIView):
     serializer_class = ItemSerializer
+    pagination_class = StandardPagination
+    filter_backends = [DjangoFilterBackend, SearchFilter]
+    filterset_fields = ["manufacturer", "item_type", "price"]
+    search_fields = ["item_name", "description", "manufacturer"]
 
     def get_queryset(self):
         category_id = self.kwargs["pk"]
@@ -103,6 +114,20 @@ class CategoryItemsAPIView(ListAPIView):
 
         # Include items in this category and all subcategories recursively
         items = Item.objects.filter(category__in=all_categories)
+
+        # Handle sorting
+        sort_param = self.request.query_params.get("sort")
+        if sort_param:
+            if sort_param == "price_asc":
+                items = items.order_by("price")
+            elif sort_param == "price_desc":
+                items = items.order_by("-price")
+            elif sort_param in ["saving_desc", "percent_off_desc"]:
+                items = items.order_by("-price")  # Placeholder
+            else:
+                items = items.order_by("-created_at")
+        else:
+            items = items.order_by("-created_at")
 
         return items
 
