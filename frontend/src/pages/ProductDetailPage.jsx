@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useLocation, useParams, useNavigate } from "react-router-dom";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { addItemToCart, saveItemForLater } from "../app/slices/CartSlice";
-import { toast } from "react-toastify";
+import Breadcrumb from "../components/Breadcrumb";
 import WhyChooseUs from "./WhyIsEveryone";
 import RatingAndReviews from "./RatingAndReviews";
 
@@ -11,13 +11,14 @@ const ProductDetail = () => {
   const params = useParams();
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const { categories } = useSelector((state) => state.categories);
 
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedImage, setSelectedImage] = useState("");
   const [selectedPackSize, setSelectedPackSize] = useState(null);
-  
+
   // Zoom functionality states
   const [isZooming, setIsZooming] = useState(false);
   const [zoomPosition, setZoomPosition] = useState({ x: 0, y: 0 });
@@ -118,8 +119,6 @@ const ProductDetail = () => {
     setZoomPosition({ x, y });
   };
 
-  console.log("product", product);
-
   if (loading) {
     return (
       <div className="w-full min-h-screen flex items-center justify-center">
@@ -150,7 +149,8 @@ const ProductDetail = () => {
     ? Math.round((savings / currentPriceInfo.mrp) * 100)
     : 0;
 
-  const currentImage = selectedImage ||
+  const currentImage =
+    selectedImage ||
     product.images?.[0] ||
     "https://www.bbassets.com/media/uploads/p/m/10000102_20-fresho-cucumber.jpg?tr=w-154,q-80";
 
@@ -158,6 +158,11 @@ const ProductDetail = () => {
     <div className="bg-gray-50 min-h-screen font-sans">
       <div className="container mx-auto px-4 py-8">
         <div className="mb-6">
+          <Breadcrumb
+            categoryId={product?.raw?.category?.id}
+            categories={categories}
+            productName={product?.name}
+          />
           <button
             onClick={() => navigate(-1)}
             className="text-blue-600 hover:underline mb-4"
@@ -169,7 +174,7 @@ const ProductDetail = () => {
         <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-lg">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
             <div>
-              <div 
+              <div
                 className="border rounded-lg overflow-hidden mb-4 relative cursor-crosshair"
                 onMouseEnter={handleMouseEnter}
                 onMouseLeave={handleMouseLeave}
@@ -180,16 +185,16 @@ const ProductDetail = () => {
                   alt="Main product"
                   className="w-full h-auto object-cover aspect-square"
                 />
-                
+
                 {/* Zoom Overlay */}
                 {isZooming && (
-                  <div 
+                  <div
                     className="absolute top-0 left-full ml-4 w-96 h-96 border-2 border-gray-300 rounded-lg overflow-hidden bg-white shadow-xl z-50 pointer-events-none"
                     style={{
                       backgroundImage: `url(${currentImage})`,
-                      backgroundSize: '200%',
+                      backgroundSize: "200%",
                       backgroundPosition: `${zoomPosition.x}% ${zoomPosition.y}%`,
-                      backgroundRepeat: 'no-repeat'
+                      backgroundRepeat: "no-repeat",
                     }}
                   >
                     <div className="absolute inset-0 border border-gray-200"></div>

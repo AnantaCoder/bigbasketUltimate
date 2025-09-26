@@ -103,9 +103,7 @@ function HomePage() {
           {searchQuery ||
             categories.find((c) => c.id === selectedCategoryId)?.name ||
             "Category"} */}
-          <Breadcrumb
-            category={categories.find((c) => c.id === selectedCategoryId )}
-          />
+          <Breadcrumb category={selectedCategory} />
           {console.log(categories)}
         </h1>
       </div>
@@ -278,6 +276,8 @@ function HomePage() {
             filters={filters}
             sortBy={sortBy}
             search={searchQuery}
+            showItemBreadcrumbs={true}
+            categories={categories}
           />
         </main>
       </div>

@@ -3,6 +3,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { addItemToCart } from "../app/slices/CartSlice";
+import Breadcrumb from "./Breadcrumb";
 
 // Clock Icon
 const ClockIcon = () => (
@@ -38,7 +39,7 @@ const BookmarkIcon = () => (
   </svg>
 );
 
-const Card = ({ item }) => {
+const Card = ({ item, showItemBreadcrumbs = false, categories = [] }) => {
   const dispatch = useDispatch();
 
   if (!item) return null;
@@ -111,7 +112,9 @@ const Card = ({ item }) => {
         </div>
 
         {/* Content */}
-        <div className="p-3 flex flex-col flex-1"> {/* flex-1 to help equalize */}
+        <div className="p-3 flex flex-col flex-1">
+          {" "}
+          {/* flex-1 to help equalize */}
           <div className="flex justify-between items-center">
             <p className="text-sm text-gray-500">{manufacturer || "Brand"}</p>
             <span className="bg-yellow-100 text-gray-600 text-xs font-semibold px-2 py-1 rounded-full flex items-center">
@@ -119,16 +122,29 @@ const Card = ({ item }) => {
               {deliveryTime}
             </span>
           </div>
-
+          {showItemBreadcrumbs && item.category && (
+            <div className="mt-1">
+              <Breadcrumb
+                categoryId={item.category.id}
+                categories={categories}
+                className="text-xs mb-2 [&>nav]:mb-0"
+              />
+            </div>
+          )}
           {/* Title with max height to avoid pushing layout */}
           <h3
             className="mt-2 text-base font-semibold text-gray-800"
-            style={{ lineHeight: "1.1", maxHeight: "2.2rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+            style={{
+              lineHeight: "1.1",
+              maxHeight: "2.2rem",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
             title={item_name}
           >
             {item_name}
           </h3>
-
           {/* Pack Selector */}
           <select className="mt-3 w-full border border-gray-300 rounded-md p-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-400">
             {packOptions.map((option) => (
@@ -137,10 +153,8 @@ const Card = ({ item }) => {
               </option>
             ))}
           </select>
-
           {/* spacer expands to push price/actions to the bottom */}
           <div className="flex-1" />
-
           {/* Price */}
           <div className="mt-4">
             <p className="text-lg font-bold text-gray-900">
@@ -150,14 +164,12 @@ const Card = ({ item }) => {
               </span>
             </p>
           </div>
-
           {/* Stock Warning */}
           {warningMessage && (
             <div className="mt-2 text-sm font-semibold text-red-600">
               {warningMessage}
             </div>
           )}
-
           {/* Actions */}
           <div className="mt-3 flex items-center justify-between space-x-2">
             <button

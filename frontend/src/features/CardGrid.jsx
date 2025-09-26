@@ -38,6 +38,8 @@ const CardGrid = ({
   filters = {},
   sortBy = "relevance",
   search = null,
+  showItemBreadcrumbs = false,
+  categories = [],
 }) => {
   const dispatch = useDispatch();
   const [items, setItems] = useState([]);
@@ -211,7 +213,12 @@ const CardGrid = ({
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4">
         {items.map((item, index) => (
-          <Card key={item.id || `item-${index}`} item={item} />
+          <Card
+            key={item.id || `item-${index}`}
+            item={item}
+            showItemBreadcrumbs={showItemBreadcrumbs}
+            categories={categories}
+          />
         ))}
       </div>
 

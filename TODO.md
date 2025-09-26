@@ -1,0 +1,4 @@
+- [x] Update CategoryPage.jsx to fetch all categories using fetchCategories
+- [x] Make subcategories in CategoryPage clickable by wrapping in Link to /category/${subcat.id}
+- [x] Pass showItemBreadcrumbs={true} and categories={categories} to CardGrid in CategoryPage
+- [x] Verify that only fetchItemsByCategory is used for category-specific items

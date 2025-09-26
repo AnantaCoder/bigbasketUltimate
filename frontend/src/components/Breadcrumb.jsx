@@ -4,10 +4,27 @@ import { House } from "lucide-react";
 /**
  * Universal Breadcrumb
  * - If a `category` prop is passed, it uses the category hierarchy.
+ * - If `categoryId` and `categories` are passed, builds hierarchy from flat list.
+ * - If `productName` is passed, appends it at the end.
  * - Otherwise, it falls back to the URL path.
  */
-const Breadcrumb = ({ category }) => {
+const Breadcrumb = ({ category, categoryId, categories, productName }) => {
   const location = useLocation();
+
+  // -------- Utility to build chain from flat categories list --------
+  const buildChainFromId = (categoryId, categories) => {
+    const findCategory = (id) => categories.find((c) => c.id === id);
+    let current = findCategory(categoryId);
+    if (!current) return [];
+
+    const chain = [];
+    while (current) {
+      chain.unshift({ ...current, route: `/category/${current.id}` });
+      const parentId = current.parent?.id || current.parent_id;
+      current = parentId ? findCategory(parentId) : null;
+    }
+    return chain;
+  };
 
   // -------- Category-based breadcrumbs --------
   const buildCategoryBreadcrumbs = (cat) => {
@@ -19,23 +36,32 @@ const Breadcrumb = ({ category }) => {
     ];
   };
 
-  const categoryBreadcrumbs = category
-    ? buildCategoryBreadcrumbs(category)
-    : [];
+  let breadcrumbs = [];
 
-  // -------- URL-based breadcrumbs --------
-  const pathnames = location.pathname.split("/").filter((x) => x);
+  if (category) {
+    breadcrumbs = buildCategoryBreadcrumbs(category);
+  } else if (categoryId && categories.length > 0) {
+    breadcrumbs = buildChainFromId(categoryId, categories);
+  } else {
+    // -------- URL-based breadcrumbs --------
+    const pathnames = location.pathname.split("/").filter((x) => x);
 
-  const urlBreadcrumbs = pathnames.map((name, index) => {
-    const routeTo = "/" + pathnames.slice(0, index + 1).join("/");
-    // Clean up the name by replacing hyphens with spaces
-    const cleanName = name.replace(/-/g, " ");
-    return { id: routeTo, name: cleanName, route: routeTo };
-  });
+    const urlBreadcrumbs = pathnames.map((name, index) => {
+      const routeTo = "/" + pathnames.slice(0, index + 1).join("/");
+      // Clean up the name by replacing hyphens with spaces
+      const cleanName = name.replace(/-/g, " ");
+      return { id: routeTo, name: cleanName, route: routeTo };
+    });
+    breadcrumbs = urlBreadcrumbs;
+  }
 
-  // -------- Final breadcrumbs --------
-  // Choose which breadcrumbs to use based on the 'category' prop
-  const breadcrumbs = category ? categoryBreadcrumbs : urlBreadcrumbs;
+  // Append product name if provided
+  if (productName) {
+    breadcrumbs = [
+      ...breadcrumbs,
+      { name: productName, id: `product-${Date.now()}`, route: null },
+    ];
+  }
 
   return (
     <nav aria-label="breadcrumb" className="text-sm text-gray-600 mb-4">
